@@ -1,0 +1,33 @@
+{
+  "pages": [
+    "pages/home/index",
+    "pages/entry/index",
+    "pages/inventory/index",
+    "pages/recipes/index",
+    "pages/purchase/index",
+    "pages/stats/index",
+    "pages/mine/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "食光机",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f6f7fb",
+    "backgroundTextStyle": "light"
+  },
+  "tabBar": {
+    "color": "#666666",
+    "selectedColor": "#111111",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      { "pagePath": "pages/home/index", "text": "首页","iconPath": "assets/tabbar/home.png","selectedIconPath": "assets/tabbar/home.png"},
+      { "pagePath": "pages/entry/index", "text": "录入","iconPath": "assets/tabbar/add.png" ,"selectedIconPath": "assets/tabbar/add.png"},
+      { "pagePath": "pages/inventory/index", "text": "库存" ,"iconPath": "assets/tabbar/inventory.png","selectedIconPath": "assets/tabbar/inventory.png"},
+      { "pagePath": "pages/recipes/index", "text": "菜谱" ,"iconPath": "assets/tabbar/menu.png","selectedIconPath": "assets/tabbar/menu.png"},
+      { "pagePath": "pages/mine/index", "text": "我的","iconPath": "assets/tabbar/mine.png","selectedIconPath": "assets/tabbar/mine.png"}
+    ]
+  },
+  "style": "v2",
+  "lazyCodeLoading": "requiredComponents"
+}

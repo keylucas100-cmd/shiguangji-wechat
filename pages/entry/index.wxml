@@ -1,0 +1,137 @@
+<view class="container theme-{{themeKey}}">
+  <view class="card">
+    <view class="entry-header">
+      <view class="entry-title">今天买了什么，顺手记一下~</view>
+    </view>
+
+    <view class="entry-body">
+      <view class="form-item">
+        <view class="label">食材名称</view>
+        <view class="field-row">
+          <view class="field-control field-main {{form.name ? 'has-clear' : ''}}">
+            <input class="input" placeholder="🥚请输入食材名称，如鸡蛋" placeholder-class="placeholder" value="{{form.name}}" data-field="name" bindinput="onInput" />
+            <view wx:if="{{form.name}}" class="clear-btn" data-field="name" bindtap="clearField">清空</view>
+          </view>
+          <view class="voice-btn" bindtap="startVoiceInput">
+            <image class="voice-icon" src="/assets/entry/mic.png" mode="aspectFit" />
+          </view>
+        </view>
+      </view>
+
+      <view class="form-item">
+        <view class="label">分类</view>
+        <view class="field-row">
+          <view class="field-control field-main {{form.category ? 'has-clear' : ''}}">
+            <picker range="{{categories}}" value="{{categoryIndex}}" bindchange="onCategoryChange">
+              <view wx:if="{{form.category}}" class="picker">{{form.category}}</view>
+              <view wx:else class="picker picker-placeholder">请选择分类</view>
+            </picker>
+            <view wx:if="{{form.category}}" class="clear-btn" data-field="category" bindtap="clearField">清空</view>
+          </view>
+        </view>
+      </view>
+
+      <view class="row">
+        <view class="form-item flex-item">
+          <view class="label">数量</view>
+          <view class="field-row">
+            <view class="field-control field-main {{form.quantity ? 'has-clear' : ''}}">
+              <input class="input" type="number" placeholder="请输入数量" placeholder-class="placeholder" value="{{form.quantity}}" data-field="quantity" bindinput="onInput" />
+              <view wx:if="{{form.quantity}}" class="clear-btn" data-field="quantity" bindtap="clearField">清空</view>
+            </view>
+          </view>
+        </view>
+
+        <view class="gap"></view>
+
+        <view class="form-item flex-item">
+          <view class="label">单位</view>
+          <view class="field-row">
+            <view class="field-control field-main {{form.unit ? 'has-clear' : ''}}">
+              <picker range="{{units}}" value="{{unitIndex}}" bindchange="onUnitChange">
+                <view wx:if="{{form.unit}}" class="picker">{{form.unit}}</view>
+                <view wx:else class="picker picker-placeholder">请选择单位</view> 
+              </picker>
+              <view wx:if="{{form.unit}}" class="clear-btn" data-field="unit" bindtap="clearField">清空</view>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="form-item">
+        <view class="label">购买日期</view>
+        <view class="field-row">
+          <view class="field-control field-main {{form.purchaseDate ? 'has-clear' : ''}}">
+            <picker mode="date" value="{{form.purchaseDate}}" end="{{today}}" bindchange="onPurchaseDateChange">
+              <view wx:if="{{form.purchaseDate}}" class="picker">{{form.purchaseDate}}</view>
+              <view wx:else class="picker picker-with-icon">
+                <image class="picker-icon" src="/assets/entry/calendar.png" mode="aspectFit" />
+                <view class="picker-placeholder">请选择购买日期</view>
+              </view>
+            </picker>
+            <view wx:if="{{form.purchaseDate}}" class="clear-btn" data-field="purchaseDate" bindtap="clearField">清空</view>
+          </view>
+        </view>
+      </view>
+
+      <view class="form-item">
+        <view class="label">出厂日期</view>
+        <view class="field-row">
+          <view class="field-control field-main {{form.productionDate ? 'has-clear' : ''}}">
+            <picker mode="date" value="{{form.productionDate}}" bindchange="onProductionDateChange">
+              <view wx:if="{{form.productionDate}}" class="picker">{{form.productionDate}}</view>
+              <view wx:else class="picker picker-with-icon">
+                <image class="picker-icon" src="/assets/entry/schedule.png" mode="aspectFit" />
+                <view class="picker-placeholder">请选择出厂日期</view>
+              </view>
+            </picker>
+            <view wx:if="{{form.productionDate}}" class="clear-btn" data-field="productionDate" bindtap="clearField">清空</view>
+          </view>
+        </view>
+      </view>
+
+      <view class="form-item">
+        <view class="label">保质期</view>
+        <view class="field-row">
+          <view class="field-control field-main {{form.shelfLifeDays ? 'has-clear' : ''}}">
+            <input class="input" type="number" placeholder="请输入保质期天数" placeholder-class="placeholder" value="{{form.shelfLifeDays}}" data-field="shelfLifeDays" bindinput="onInput" />
+            <view wx:if="{{form.shelfLifeDays}}" class="clear-btn" data-field="shelfLifeDays" bindtap="clearField">清空</view>
+          </view>
+        </view>
+      </view>
+
+      <view class="form-item">
+        <view class="label">预计到期日期</view>
+        <view wx:if="{{form.expireDate}}" class="picker readonly-picker">{{form.expireDate}}</view>
+        <view wx:else class="picker picker-placeholder">填写出厂日期和保质期后自动计算</view>
+      </view>
+      <view class="form-actions">
+        <button class="btn clear-form-btn" bindtap="clearForm">一键清空</button>
+        <button class="btn save-form-btn" bindtap="save">保存食材</button>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{clearToastVisible}}" class="clear-toast">
+    <view class="clear-toast-text">录入内容已清空</view>
+  </view>
+
+  <view wx:if="{{voicePanelVisible}}" class="voice-mask">
+    <view class="voice-panel">
+      <view class="voice-title">语音识别测试</view>
+      <view class="voice-desc">先输入一段模拟识别文本，确认解析和填表效果。</view>
+      <textarea
+        class="voice-textarea"
+        placeholder="例如：牛肉 2斤 今天购买 昨天出厂 保质期7天"
+        placeholder-class="placeholder"
+        value="{{voiceText}}"
+        bindinput="onVoiceTextInput"
+      />
+      <view class="voice-example">也可以试试：鸡肉 500克 今天买 今天生产 保质期3天</view>
+      <view class="voice-actions">
+        <view class="voice-action secondary" bindtap="cancelVoiceInput">取消</view>
+        <view class="voice-action primary" bindtap="confirmVoiceInput">填入表单</view>
+      </view>
+    </view>
+  </view>
+</view>

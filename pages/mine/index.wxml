@@ -1,0 +1,85 @@
+<view class="container theme-{{settings.themeKey}}">
+  <view class="profile-card">
+    <view class="avatar-ring">
+      <view class="avatar-text">{{avatarText}}</view>
+    </view>
+    <view class="profile-main">
+      <view class="profile-title">{{settings.userName || 'Lucas'}} 的食光机</view>
+      <view class="profile-subtitle">把库存、提醒和偏好都放在这里</view>
+    </view>
+  </view>
+
+  <view class="card feature-card">
+    <view class="section-title">常用功能</view>
+    <view class="feature-row" hover-class="feature-pressed" hover-start-time="0" hover-stay-time="50" bindtap="goStats">
+      <view class="feature-icon-wrap">
+        <image class="feature-icon" src="/assets/home/statistic.png" mode="aspectFit"></image>
+      </view>
+      <view class="feature-text">
+        <view class="title">数据统计</view>
+        <view class="subtitle">查看库存、消耗和提醒概览</view>
+      </view>
+      <view class="feature-arrow">></view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="section-title">基础设置</view>
+    <view class="setting-row">
+      <view class="setting-text">
+        <view class="title">用户名</view>
+        <view class="subtitle">首页欢迎语会同步这里的名字</view>
+      </view>
+      <view class="name-field" style="width: {{nameFieldWidth}}rpx;">
+        <input
+          class="name-input"
+          value="{{settings.userName}}"
+          style="width: {{nameInputWidth}}rpx;"
+          maxlength="16"
+          placeholder="请输入用户名"
+          bindinput="onUserNameInput"
+        />
+        <text class="name-measurer">{{nameMeasureText}}</text>
+      </view>
+    </view>
+
+    <view class="setting-row">
+      <view class="setting-text">
+        <view class="title">适老化模式</view>
+        <view class="subtitle">先保留开关，后续接入大字号布局</view>
+      </view>
+      <switch checked="{{settings.elderlyMode}}" color="{{themeColor}}" bindchange="toggleElderly" />
+    </view>
+
+    <view class="setting-row no-border">
+      <view class="setting-text">
+        <view class="title">语音播报</view>
+        <view class="subtitle">提醒信息语音提示</view>
+      </view>
+      <switch checked="{{settings.voiceBroadcast}}" color="{{themeColor}}" bindchange="toggleVoice" />
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="section-title">主题色</view>
+    <view class="theme-grid">
+      <block wx:for="{{themeOptions}}" wx:key="key">
+        <view
+          class="theme-option {{settings.themeKey===item.key ? 'active' : ''}}"
+          style="color: {{item.color}};"
+          bindtap="selectTheme"
+          data-theme="{{item.key}}"
+        >
+          <view class="theme-dot" style="background: {{item.color}};"></view>
+          <view class="theme-name">{{item.name}}</view>
+        </view>
+      </block>
+    </view>
+  </view>
+
+  <view class="card about-card">
+    <view class="section-title">关于系统</view>
+    <view class="about-line">当前为前端原型版，数据存储使用本地缓存。</view>
+    <view class="about-line">后续可以加入数据导出、清理缓存、提醒时间等功能。</view>
+  </view>
+</view>

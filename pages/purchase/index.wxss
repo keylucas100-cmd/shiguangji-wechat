@@ -1,0 +1,123 @@
+.container {
+  padding: 28rpx;
+}
+
+.card,
+.list-item {
+  background: var(--theme-surface, #ffffff);
+  border-radius: 22rpx;
+  padding: 22rpx 24rpx 18rpx;
+  box-shadow: 0 14rpx 34rpx var(--theme-shadow-soft, rgba(0, 0, 0, 0.04));
+  border: 2rpx solid var(--theme-border, rgba(93, 150, 91, 0.1));
+  box-sizing: border-box;
+}
+
+.card {
+  padding: 24rpx;
+  margin-bottom: 18rpx;
+}
+
+.list-item {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 18rpx;
+}
+
+.list-item.suggestion-urgent {
+  border-color: rgba(226, 77, 67, 0.16);
+  background: linear-gradient(135deg, #fffafa 0%, #fff1ef 100%);
+}
+
+.list-item.suggestion-low {
+  border-color: rgba(222, 166, 56, 0.18);
+  background: linear-gradient(135deg, #fffefa 0%, #fff7e0 100%);
+}
+
+.section-title {
+  font-size: 34rpx;
+  font-weight: 700;
+  margin-bottom: 10rpx;
+  color: var(--theme-title, #111111);
+}
+
+.muted,
+.subtitle {
+  color: var(--theme-muted, #666666);
+}
+
+.suggestion-top,
+.suggestion-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--theme-title, #111111);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subtitle {
+  flex: 1;
+  min-width: 0;
+  font-size: 24rpx;
+  margin-top: 0;
+  line-height: 1.45;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.suggestion-bottom {
+  margin-top: 12rpx;
+}
+
+.more-btn {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64rpx;
+  height: 40rpx;
+  color: var(--theme-title, #111111);
+  font-size: 36rpx;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.tag {
+  flex: none;
+  display: inline-block;
+  min-width: 128rpx;
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  background: var(--theme-field, #f0f1f5);
+  color: var(--theme-primary, #333333);
+  font-size: 24rpx;
+  font-weight: 700;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.tag-low {
+  background: #fff0c7;
+  color: #ad6800;
+}
+
+.tag-urgent {
+  background: #ffe1dc;
+  color: #d4380d;
+}
+
+.empty {
+  text-align: center;
+  color: var(--theme-muted, #888888);
+  padding: 80rpx 20rpx;
+}

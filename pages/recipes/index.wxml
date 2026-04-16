@@ -1,0 +1,111 @@
+<view class="container theme-{{themeKey}}">
+  <view class="recipe-toolbar">
+    <scroll-view class="filter-scroll" scroll-x enable-flex>
+      <view class="filter-inner">
+        <block wx:for="{{categoryOptions}}" wx:key="key">
+          <view
+            class="filter-chip {{categoryFilter===item.key ? 'active' : ''}}"
+            bindtap="setCategory"
+            data-category="{{item.key}}"
+          >
+            {{item.text}} {{item.count}}
+          </view>
+        </block>
+      </view>
+    </scroll-view>
+    <view class="sort-chip" bindtap="showSortSheet">
+      <text class="sort-text">{{sortText}}</text>
+      <text class="sort-arrow">⌄</text>
+    </view>
+  </view>
+
+  <block wx:if="{{list.length}}">
+    <block wx:for="{{list}}" wx:key="id">
+      <view
+        class="recipe-card"
+        bindtap="showRecipeDetail"
+        data-id="{{item.id}}"
+        hover-class="recipe-card-pressed"
+        hover-stay-time="90"
+      >
+        <view class="recipe-cover-wrap">
+          <image class="recipe-cover" src="{{item.cover}}" mode="aspectFill" />
+        </view>
+
+        <view class="recipe-main">
+          <view class="recipe-title-row">
+            <view class="recipe-title">{{item.name}}</view>
+            <view class="recipe-meta">{{item.category}}</view>
+          </view>
+          <view class="recipe-info">
+            <view class="recipe-line">已匹配：{{item.matchedText}}</view>
+            <view class="recipe-line missing-line {{item.missingPills.length ? 'has-missing' : 'no-missing'}}">
+              <text class="missing-label">缺失：</text>
+              <block wx:if="{{item.missingPills.length}}">
+                <block wx:for="{{item.missingPills}}" wx:key="*this" wx:for-item="missingName">
+                  <text class="missing-pill">{{missingName}}</text>
+                </block>
+              </block>
+              <text wx:else class="missing-empty">无</text>
+            </view>
+          </view>
+          <view class="recipe-footer">
+            <view class="cook-btn" catchtap="showRecipeDetail" data-id="{{item.id}}">
+              <text class="play-icon">▶</text>
+              <text class="cook-text">去制作</text>
+              <text class="divider">|</text>
+              <text class="step-count">{{item.stepText}}</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="score-ring" style="{{item.scoreRingStyle}}">
+          <view class="score-inner">
+            <view class="score-value">{{item.matchRate}}%</view>
+          </view>
+        </view>
+      </view>
+    </block>
+  </block>
+  <view wx:else class="empty">暂无可推荐菜谱</view>
+
+  <view wx:if="{{detailVisible}}" class="recipe-mask" catchtap="closeRecipeDetail">
+    <view class="recipe-panel" catchtap="noop">
+      <view class="panel-header">
+        <view>
+          <view class="panel-title">{{activeRecipe.name}}</view>
+          <view class="panel-subtitle">{{activeRecipe.difficulty}} · {{activeRecipe.cookTime}}分钟 · {{activeRecipe.matchRate}}%匹配</view>
+        </view>
+        <view class="panel-close" bindtap="closeRecipeDetail">×</view>
+      </view>
+
+      <view class="panel-section">
+        <view class="panel-section-title">主食材</view>
+        <view class="panel-tags">
+          <block wx:for="{{activeRecipe.ingredients}}" wx:key="name">
+            <view class="panel-tag">{{item.name}} {{item.amount}}</view>
+          </block>
+        </view>
+      </view>
+
+      <view class="panel-section">
+        <view class="panel-section-title">调料</view>
+        <view class="panel-tags">
+          <block wx:for="{{activeRecipe.seasonings}}" wx:key="name">
+            <view class="panel-tag seasoning">{{item.name}} {{item.amount}}</view>
+          </block>
+        </view>
+      </view>
+
+      <view class="panel-section">
+        <view class="panel-section-title">步骤</view>
+        <block wx:for="{{activeRecipe.steps}}" wx:key="*this">
+          <view class="step-row">
+            <view class="step-index">{{index + 1}}</view>
+            <view class="step-text">{{item}}</view>
+          </view>
+        </block>
+      </view>
+    </view>
+  </view>
+</view>

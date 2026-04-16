@@ -1,0 +1,22 @@
+<view class="container theme-{{themeKey}}">
+  <view class="card">
+    <view class="section-title">待购建议</view>
+    <view class="muted">录入过至少 2 次，且当前库存不多时生成提醒</view>
+  </view>
+
+  <block wx:if="{{list.length}}">
+    <block wx:for="{{list}}" wx:key="dismissKey">
+      <view class="list-item suggestion-card suggestion-{{item.urgency}}">
+        <view class="suggestion-top">
+          <view class="title">{{item.name}}</view>
+          <view class="tag tag-{{item.urgency}}">{{item.tagText}}</view>
+        </view>
+        <view class="suggestion-bottom">
+          <view class="subtitle">{{item.reason}}</view>
+          <view class="more-btn" catchtap="showSuggestionActions" data-key="{{item.dismissKey}}">...</view>
+        </view>
+      </view>
+    </block>
+  </block>
+  <view wx:else class="empty">当前暂无采购建议</view>
+</view>

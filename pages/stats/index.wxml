@@ -1,0 +1,58 @@
+<view class="container theme-{{themeKey}}">
+  <view class="card metrics-card">
+    <view class="section-title">核心指标</view>
+    <view class="metric-grid">
+      <block wx:for="{{coreMetrics}}" wx:key="key">
+        <view class="metric-item">
+          <view class="metric-ring" style="{{item.ringStyle}}">
+            <view class="metric-ring-inner">
+              <view class="metric-value">{{item.value}}%</view>
+              <view class="metric-label">{{item.label}}</view>
+            </view>
+          </view>
+          <view class="metric-title">{{item.label}}</view>
+          <view class="metric-desc">{{item.desc}}</view>
+        </view>
+      </block>
+    </view>
+  </view>
+
+  <view class="card weekly-card">
+    <view class="section-title">本周概览</view>
+    <view class="weekly-grid">
+      <block wx:for="{{weeklyItems}}" wx:key="label">
+        <view class="weekly-item">
+          <view class="weekly-value">{{item.value}}<text class="weekly-unit">{{item.unit}}</text></view>
+          <view class="weekly-label">{{item.label}}</view>
+        </view>
+      </block>
+    </view>
+  </view>
+
+  <view class="card waste-card">
+    <view class="section-title">浪费分析</view>
+    <view class="waste-main">
+      <view>
+        <view class="waste-rate">{{stats.weekly.wasteRate}}%</view>
+        <view class="waste-label">本周浪费率</view>
+      </view>
+      <view class="waste-copy">过期 {{stats.weekly.expired}} 样 · 丢弃 {{stats.weekly.discarded}} 样</view>
+    </view>
+  </view>
+
+  <view class="card trend-card">
+    <view class="section-title">趋势变化</view>
+    <block wx:for="{{trendItems}}" wx:key="label">
+      <view class="trend-row">
+        <view class="trend-label">{{item.label}}</view>
+        <view class="trend-value trend-{{item.className}}">{{item.text}}</view>
+      </view>
+    </block>
+  </view>
+
+  <view class="card note-card">
+    <view class="section-title">说明</view>
+    <view class="note-line">总记录：{{stats.total}} 样</view>
+    <view class="note-line">已使用：{{stats.used}} 样 · 已过期：{{stats.expired}} 样 · 已丢弃：{{stats.discarded}} 样</view>
+  </view>
+</view>
