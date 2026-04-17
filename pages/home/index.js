@@ -15,14 +15,14 @@ function inferCategoryByName(name) {
 
 function getSuggestionImage(category) {
   const map = {
-    '蔬菜': '/assets/home/reminder/vegetables.jpg',
-    '肉类': '/assets/home/reminder/meat.jpg',
-    '海鲜': '/assets/home/reminder/seafood.jpg',
-    '蛋奶': '/assets/home/reminder/egg-milk.jpg',
-    '水果': '/assets/home/reminder/fruit.jpg',
-    '主食': '/assets/home/reminder/rice.jpg',
-    '调料': '/assets/home/reminder/flavour.jpg',
-    '其他': '/assets/home/reminder/other.jpg'
+    '蔬菜': '/assets/inventory/vegetables.jpg',
+    '肉类': '/assets/inventory/meat.jpg',
+    '海鲜': '/assets/inventory/seafood.jpg',
+    '蛋奶': '/assets/inventory/egg-milk.jpg',
+    '水果': '/assets/inventory/fruit.jpg',
+    '主食': '/assets/inventory/rice.jpg',
+    '调料': '/assets/inventory/flavour.jpg',
+    '其他': '/assets/inventory/other.jpg'
   }
   return map[category] || map['其他']
 }

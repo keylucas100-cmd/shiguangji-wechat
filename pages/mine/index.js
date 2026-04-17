@@ -58,10 +58,12 @@ Page({
         if (!rect) return
         const { windowWidth } = wx.getSystemInfoSync()
         const width = Math.ceil((rect.width * 750) / windowWidth)
-        const inputWidth = Math.max(width, 32)
+        // Native input on real devices needs a little extra room for cursor
+        // and internal text rendering; otherwise short names can still ellipsize.
+        const inputWidth = Math.min(Math.max(width + 28, 96), 260)
         this.setData({
           nameInputWidth: inputWidth,
-          nameFieldWidth: Math.min(Math.max(inputWidth + 40, 96), 300)
+          nameFieldWidth: Math.min(Math.max(inputWidth + 44, 140), 304)
         })
       })
       .exec()

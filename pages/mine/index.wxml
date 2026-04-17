@@ -28,7 +28,6 @@
     <view class="setting-row">
       <view class="setting-text">
         <view class="title">用户名</view>
-        <view class="subtitle">首页欢迎语会同步这里的名字</view>
       </view>
       <view class="name-field" style="width: {{nameFieldWidth}}rpx;">
         <input
