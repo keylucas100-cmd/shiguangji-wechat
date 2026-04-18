@@ -64,6 +64,12 @@ Page({
       used: 0,
       expired: 0,
       discarded: 0,
+      riskStages: {
+        lowRisk: 0,
+        mediumRisk: 0,
+        highRisk: 0,
+        expired: 0
+      },
       utilizationRate: 0,
       reminderHandleRate: 0,
       wasteRate: 0,
@@ -100,10 +106,14 @@ Page({
     }
   },
   refreshStats() {
-    const stats = store.getStats()
-    this.setData({
-      stats,
-      ...buildViewData(stats)
-    })
+    store.syncInventoryFromServer()
+      .catch(() => null)
+      .finally(() => {
+        const stats = store.getStats()
+        this.setData({
+          stats,
+          ...buildViewData(stats)
+        })
+      })
   }
 })

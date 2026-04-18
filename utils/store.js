@@ -1,6 +1,13 @@
 const INVENTORY_KEY = 'sgj_inventory'
 const SETTINGS_KEY = 'sgj_settings'
 const HISTORY_KEY = 'sgj_history'
+const INVENTORY_API_URL = 'http://127.0.0.1:3000/api/inventory-records'
+const USERS_API_URL = 'http://127.0.0.1:3000/api/users'
+const INGREDIENTS_API_URL = 'http://127.0.0.1:3000/api/ingredients'
+const LOCAL_USER_OPENID = 'wx_localstyles_demo_user'
+
+let inventorySyncPromise = null
+let currentUserPromise = null
 
 const defaultSettings = {
   userName: 'Lucas',
@@ -8,6 +15,20 @@ const defaultSettings = {
   voiceBroadcast: true,
   themeKey: 'green'
 }
+
+const CATEGORY_WARNING_RULES = {
+  '蔬菜': { lowRiskDays: 4, mediumRiskDays: 2, highRiskDays: 1 },
+  '肉类': { lowRiskDays: 5, mediumRiskDays: 3, highRiskDays: 1 },
+  '海鲜': { lowRiskDays: 3, mediumRiskDays: 2, highRiskDays: 1 },
+  '蛋奶': { lowRiskDays: 6, mediumRiskDays: 3, highRiskDays: 1 },
+  '水果': { lowRiskDays: 5, mediumRiskDays: 3, highRiskDays: 1 },
+  '主食': { lowRiskDays: 7, mediumRiskDays: 4, highRiskDays: 1 },
+  '调料': { lowRiskDays: 15, mediumRiskDays: 7, highRiskDays: 2 },
+  '其他': { lowRiskDays: 7, mediumRiskDays: 4, highRiskDays: 1 }
+}
+
+const EXPIRING_STATUSES = ['low_risk', 'medium_risk', 'high_risk']
+const ACTIVE_INVENTORY_STATUSES = ['in_stock', ...EXPIRING_STATUSES]
 
 const ingredientAliasMap = {
   西红柿: '番茄',
@@ -494,6 +515,388 @@ function nowISO() {
   return new Date().toISOString()
 }
 
+function request(options) {
+  return new Promise((resolve, reject) => {
+    wx.request({
+      ...options,
+      success: resolve,
+      fail: reject
+    })
+  })
+}
+
+function getResponseErrorMessage(res) {
+  const payload = res && res.data
+  if (payload && typeof payload === 'object' && payload.message) return payload.message
+  if (typeof payload === 'string' && payload) return payload
+  return ''
+}
+
+function requestJson(options) {
+  return request(options).then(res => {
+    if (res.statusCode >= 200 && res.statusCode < 300) return res.data
+
+    const error = new Error(getResponseErrorMessage(res) || `Request failed with status ${res.statusCode}`)
+    error.statusCode = res.statusCode
+    throw error
+  })
+}
+
+function formatLocalDate(value) {
+  if (!value) return ''
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function parseNumber(value) {
+  const number = Number(value)
+  return Number.isFinite(number) ? number : 0
+}
+
+function parsePositiveInteger(value) {
+  const number = Number(value)
+  return Number.isInteger(number) && number > 0 ? number : 0
+}
+
+function parseOptionalDate(value) {
+  const text = String(value || '').trim()
+  return text || null
+}
+
+function formatDateTimeForSql(value) {
+  const date = value instanceof Date ? value : new Date(value || Date.now())
+  if (Number.isNaN(date.getTime())) return ''
+
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hour = String(date.getHours()).padStart(2, '0')
+  const minute = String(date.getMinutes()).padStart(2, '0')
+  const second = String(date.getSeconds()).padStart(2, '0')
+  return `${year}-${month}-${day} ${hour}:${minute}:${second}`
+}
+
+function makeIngredientCode() {
+  return `ING_${Date.now()}_${Math.random().toString(36).slice(2, 8).toUpperCase()}`
+}
+
+function normalizeCategoryName(value) {
+  const category = String(value || '').trim()
+  const map = {
+    '\u852c\u83dc': '\u852c\u83dc',
+    '\u8089\u7c7b': '\u8089\u7c7b',
+    '\u6d77\u9c9c': '\u6d77\u9c9c',
+    '\u86cb\u5976': '\u86cb\u5976',
+    '\u6c34\u679c': '\u6c34\u679c',
+    '\u4e3b\u98df': '\u4e3b\u98df',
+    '\u8c03\u6599': '\u8c03\u6599',
+    '\u5176\u4ed6': '\u5176\u4ed6'
+  }
+
+  return map[category] || category || '\u5176\u4ed6'
+}
+
+function getCategoryWarningRules(category) {
+  const normalizedCategory = normalizeCategoryName(category)
+  const rules = CATEGORY_WARNING_RULES[normalizedCategory] || CATEGORY_WARNING_RULES['其他']
+  return { ...rules }
+}
+
+function normalizeWarningRules(ruleLike, category) {
+  const defaults = getCategoryWarningRules(category || (ruleLike && ruleLike.category))
+  let lowRiskDays = parsePositiveInteger(ruleLike && ruleLike.lowRiskDays)
+  let mediumRiskDays = parsePositiveInteger(ruleLike && ruleLike.mediumRiskDays)
+  let highRiskDays = parsePositiveInteger(ruleLike && ruleLike.highRiskDays)
+
+  lowRiskDays = lowRiskDays || defaults.lowRiskDays
+  mediumRiskDays = mediumRiskDays || defaults.mediumRiskDays
+  highRiskDays = highRiskDays || defaults.highRiskDays
+
+  if (mediumRiskDays > lowRiskDays) mediumRiskDays = lowRiskDays
+  if (highRiskDays > mediumRiskDays) highRiskDays = mediumRiskDays
+
+  return { lowRiskDays, mediumRiskDays, highRiskDays }
+}
+
+function resolveWarningRules(item) {
+  return normalizeWarningRules({
+    category: item && item.category,
+    lowRiskDays: item && (
+      item.lowRiskDays !== undefined
+        ? item.lowRiskDays
+        : (item.low_risk_days !== undefined ? item.low_risk_days : item.default_low_risk_days)
+    ),
+    mediumRiskDays: item && (
+      item.mediumRiskDays !== undefined
+        ? item.mediumRiskDays
+        : (item.medium_risk_days !== undefined ? item.medium_risk_days : item.default_medium_risk_days)
+    ),
+    highRiskDays: item && (
+      item.highRiskDays !== undefined
+        ? item.highRiskDays
+        : (item.high_risk_days !== undefined ? item.high_risk_days : item.default_high_risk_days)
+    )
+  })
+}
+
+function mapServerInventoryItem(item) {
+  const createdAt = item.created_at || nowISO()
+  const category = normalizeCategoryName(item.category_name)
+  const warningRules = resolveWarningRules({
+    category,
+    low_risk_days: item.low_risk_days,
+    medium_risk_days: item.medium_risk_days,
+    high_risk_days: item.high_risk_days
+  })
+
+  return {
+    id: String(item.id),
+    remoteId: item.id,
+    userId: item.user_id,
+    ingredientId: item.ingredient_id,
+    batchNo: item.batch_no || '',
+    inputType: item.input_type || 'manual',
+    sourceText: item.source_text || '',
+    name: item.ingredient_name || '',
+    category,
+    quantity: parseNumber(item.quantity),
+    unit: item.unit || '',
+    purchaseDate: formatLocalDate(item.purchase_date),
+    productionDate: formatLocalDate(item.production_date),
+    shelfLifeDays: parseNumber(item.shelf_life_days),
+    lowRiskDays: warningRules.lowRiskDays,
+    mediumRiskDays: warningRules.mediumRiskDays,
+    highRiskDays: warningRules.highRiskDays,
+    expireDate: formatLocalDate(item.expire_date),
+    remainingQuantity: parseNumber(item.remaining_quantity),
+    consumedQuantity: parseNumber(item.consumed_quantity),
+    discardedQuantity: parseNumber(item.discarded_quantity),
+    consumed: item.status === 'consumed',
+    discarded: item.status === 'discarded',
+    handledTime: item.handled_time || '',
+    createdAt,
+    updatedAt: item.updated_at || createdAt
+  }
+}
+
+function rememberHistoryName(name) {
+  if (!name) return
+  const history = read(HISTORY_KEY, {})
+  history[name] = (history[name] || 0) + 1
+  write(HISTORY_KEY, history)
+}
+
+async function ensureCurrentUser() {
+  if (currentUserPromise) return currentUserPromise
+
+  currentUserPromise = (async () => {
+    const settings = getSettings()
+    const nickname = settings.userName || defaultSettings.userName
+
+    let payload = await requestJson({
+      url: `${USERS_API_URL}?openid=${encodeURIComponent(LOCAL_USER_OPENID)}&page=1&pageSize=1`,
+      method: 'GET',
+      timeout: 10000
+    })
+    if (payload.data && payload.data.length) return payload.data[0]
+
+    payload = await requestJson({
+      url: `${USERS_API_URL}?keyword=${encodeURIComponent(nickname)}&page=1&pageSize=20`,
+      method: 'GET',
+      timeout: 10000
+    })
+    if (payload.data && payload.data.length) {
+      const matchedUser = payload.data.find(item => item.nickname === nickname) || payload.data[0]
+      if (matchedUser) return matchedUser
+    }
+
+    payload = await requestJson({
+      url: `${USERS_API_URL}?page=1&pageSize=1`,
+      method: 'GET',
+      timeout: 10000
+    })
+    if (payload.data && payload.data.length) return payload.data[0]
+
+    return requestJson({
+      url: USERS_API_URL,
+      method: 'POST',
+      timeout: 10000,
+      header: {
+        'content-type': 'application/json'
+      },
+      data: {
+        openid: LOCAL_USER_OPENID,
+        nickname
+      }
+    })
+  })()
+    .catch(err => {
+      currentUserPromise = null
+      throw err
+    })
+
+  return currentUserPromise
+}
+
+async function ensureIngredient(item, userId) {
+  const name = String(item.name || '').trim()
+  if (!name) throw new Error('Ingredient name is required')
+  const warningRules = resolveWarningRules(item)
+
+  const payload = await requestJson({
+    url: `${INGREDIENTS_API_URL}?keyword=${encodeURIComponent(name)}&page=1&pageSize=20`,
+    method: 'GET',
+    timeout: 10000
+  })
+
+  const matched = (payload.data || []).find(ingredient => ingredient.ingredient_name === name)
+  if (matched) return matched
+
+  return requestJson({
+    url: INGREDIENTS_API_URL,
+    method: 'POST',
+    timeout: 10000,
+    header: {
+      'content-type': 'application/json'
+    },
+    data: {
+      ingredient_code: makeIngredientCode(),
+      ingredient_name: name,
+      category_name: normalizeCategoryName(item.category),
+      default_unit: item.unit,
+      default_shelf_life_days: parsePositiveInteger(item.shelfLifeDays) || undefined,
+      default_low_risk_days: warningRules.lowRiskDays,
+      default_medium_risk_days: warningRules.mediumRiskDays,
+      default_high_risk_days: warningRules.highRiskDays,
+      created_by: userId || undefined,
+      status: 1
+    }
+  })
+}
+
+async function resolveIngredientId(item, existingItem) {
+  if (
+    existingItem &&
+    existingItem.ingredientId &&
+    String(existingItem.name || '').trim() === String(item.name || '').trim() &&
+    normalizeCategoryName(existingItem.category) === normalizeCategoryName(item.category)
+  ) {
+    return existingItem.ingredientId
+  }
+
+  if (item.ingredientId && !existingItem) return item.ingredientId
+
+  const user = await ensureCurrentUser()
+  const ingredient = await ensureIngredient(item, user.id)
+  return ingredient.id
+}
+
+function buildCreatePayload(item, userId, ingredientId) {
+  const warningRules = resolveWarningRules(item)
+  return {
+    user_id: userId,
+    ingredient_id: ingredientId,
+    input_type: item.inputType || 'manual',
+    source_text: item.sourceText || '',
+    quantity: parseNumber(item.quantity),
+    unit: item.unit,
+    purchase_date: parseOptionalDate(item.purchaseDate),
+    production_date: parseOptionalDate(item.productionDate),
+    expire_date: parseOptionalDate(item.expireDate),
+    shelf_life_days: parsePositiveInteger(item.shelfLifeDays) || null,
+    low_risk_days: warningRules.lowRiskDays,
+    medium_risk_days: warningRules.mediumRiskDays,
+    high_risk_days: warningRules.highRiskDays
+  }
+}
+
+function buildUpdatePayload(item, existingItem, ingredientId) {
+  const quantity = parseNumber(item.quantity)
+  const consumedQuantity = parseNumber(item.consumedQuantity !== undefined ? item.consumedQuantity : existingItem.consumedQuantity)
+  const discardedQuantity = parseNumber(item.discardedQuantity !== undefined ? item.discardedQuantity : existingItem.discardedQuantity)
+  const isConsumed = !!item.consumed
+  const isDiscarded = !!item.discarded
+  const warningRules = normalizeWarningRules({
+    lowRiskDays: item.lowRiskDays !== undefined ? item.lowRiskDays : existingItem.lowRiskDays,
+    mediumRiskDays: item.mediumRiskDays !== undefined ? item.mediumRiskDays : existingItem.mediumRiskDays,
+    highRiskDays: item.highRiskDays !== undefined ? item.highRiskDays : existingItem.highRiskDays
+  }, item.category || existingItem.category)
+
+  let remainingQuantity = parseNumber(
+    item.remainingQuantity !== undefined && item.remainingQuantity !== ''
+      ? item.remainingQuantity
+      : quantity - consumedQuantity - discardedQuantity
+  )
+
+  if (isConsumed || isDiscarded) remainingQuantity = 0
+
+  return {
+    ingredient_id: ingredientId,
+    input_type: item.inputType || existingItem.inputType || 'manual',
+    source_text: item.sourceText !== undefined ? item.sourceText : (existingItem.sourceText || ''),
+    quantity,
+    unit: item.unit,
+    purchase_date: parseOptionalDate(item.purchaseDate),
+    production_date: parseOptionalDate(item.productionDate),
+    expire_date: parseOptionalDate(item.expireDate),
+    shelf_life_days: parsePositiveInteger(item.shelfLifeDays) || null,
+    low_risk_days: warningRules.lowRiskDays,
+    medium_risk_days: warningRules.mediumRiskDays,
+    high_risk_days: warningRules.highRiskDays,
+    remaining_quantity: Math.max(0, remainingQuantity),
+    consumed_quantity: isConsumed ? quantity : consumedQuantity,
+    discarded_quantity: isDiscarded ? quantity : discardedQuantity,
+    status: isConsumed ? 'consumed' : (isDiscarded ? 'discarded' : 'in_stock'),
+    handled_time: isConsumed || isDiscarded ? formatDateTimeForSql(new Date()) : null
+  }
+}
+
+async function createInventoryRecord(item) {
+  const user = item.userId ? { id: item.userId } : await ensureCurrentUser()
+  const ingredientId = item.ingredientId || await resolveIngredientId(item)
+  const payload = buildCreatePayload(item, user.id, ingredientId)
+  const row = await requestJson({
+    url: INVENTORY_API_URL,
+    method: 'POST',
+    timeout: 10000,
+    header: {
+      'content-type': 'application/json'
+    },
+    data: payload
+  })
+
+  rememberHistoryName(item.name)
+  await syncInventoryFromServer()
+  return mapServerInventoryItem(row)
+}
+
+async function updateInventoryRecord(item) {
+  const targetId = item.remoteId || item.id
+  const existingItem = getInventory().find(v => String(v.id) === String(item.id) || String(v.remoteId) === String(targetId))
+  if (!existingItem) throw new Error('Inventory record not found')
+
+  const ingredientId = await resolveIngredientId(item, existingItem)
+  const payload = buildUpdatePayload(item, existingItem, ingredientId)
+  const row = await requestJson({
+    url: `${INVENTORY_API_URL}/${targetId}`,
+    method: 'PUT',
+    timeout: 10000,
+    header: {
+      'content-type': 'application/json'
+    },
+    data: payload
+  })
+
+  await syncInventoryFromServer()
+  return mapServerInventoryItem(row)
+}
+
 function read(key, fallback) {
   try {
     const v = wx.getStorageSync(key)
@@ -505,6 +908,37 @@ function read(key, fallback) {
 
 function write(key, value) {
   wx.setStorageSync(key, value)
+}
+
+function syncInventoryFromServer() {
+  if (inventorySyncPromise) return inventorySyncPromise
+
+  inventorySyncPromise = request({
+    url: `${INVENTORY_API_URL}?page=1&pageSize=1000`,
+    method: 'GET',
+    timeout: 10000,
+    header: {
+      'content-type': 'application/json'
+    }
+  })
+    .then(res => {
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        throw new Error(`Inventory request failed with status ${res.statusCode}`)
+      }
+
+      const payload = res.data || {}
+      if (!Array.isArray(payload.data)) {
+        throw new Error('Inventory payload is invalid')
+      }
+
+      saveInventoryList(payload.data.map(mapServerInventoryItem))
+      return getInventory()
+    })
+    .finally(() => {
+      inventorySyncPromise = null
+    })
+
+  return inventorySyncPromise
 }
 
 function getSettings() {
@@ -533,68 +967,76 @@ function saveInventoryList(list) {
 }
 
 function upsertInventory(item) {
-  const list = read(INVENTORY_KEY, [])
-  let shouldRecordHistory = false
-  if (!item.id) {
-    item.id = 'i_' + Date.now()
-    item.createdAt = nowISO()
-    shouldRecordHistory = true
-  }
-  item.updatedAt = nowISO()
-  const idx = list.findIndex(v => v.id === item.id)
-  if (idx > -1) list[idx] = item
-  else {
-    list.push(item)
-    shouldRecordHistory = true
-  }
-  if (shouldRecordHistory) {
-    const history = read(HISTORY_KEY, {})
-    history[item.name] = (history[item.name] || 0) + 1
-    write(HISTORY_KEY, history)
-  }
-  saveInventoryList(list)
-  return item
+  if (item.id || item.remoteId) return updateInventoryRecord(item)
+  return createInventoryRecord(item)
 }
 
 function deleteInventory(id) {
-  const list = read(INVENTORY_KEY, []).filter(item => item.id !== id)
-  saveInventoryList(list)
+  const item = getInventory().find(v => String(v.id) === String(id) || String(v.remoteId) === String(id))
+  if (!item) return Promise.reject(new Error('Inventory record not found'))
+
+  return requestJson({
+    url: `${INVENTORY_API_URL}/${item.remoteId || item.id}`,
+    method: 'DELETE',
+    timeout: 10000
+  }).then(() => syncInventoryFromServer())
 }
 
 function updateInventoryStatus(id, mode) {
-  const list = read(INVENTORY_KEY, [])
-  const idx = list.findIndex(v => v.id === id)
-  if (idx === -1) return
+  const item = getInventory().find(v => String(v.id) === String(id) || String(v.remoteId) === String(id))
+  if (!item) return Promise.reject(new Error('Inventory record not found'))
+
+  const availableQuantity = parseNumber(item.remainingQuantity !== undefined ? item.remainingQuantity : getAvailableQuantity(item))
+  const consumedQuantity = parseNumber(item.consumedQuantity)
+  const discardedQuantity = parseNumber(item.discardedQuantity)
+  const payload = {
+    remaining_quantity: 0,
+    status: mode,
+    handled_time: formatDateTimeForSql(new Date())
+  }
+
   if (mode === 'consumed') {
-    list[idx].consumed = true
-    list[idx].discarded = false
-    list[idx].remainingQuantity = 0
+    payload.consumed_quantity = consumedQuantity + availableQuantity
+    payload.discarded_quantity = discardedQuantity
+  } else if (mode === 'discarded') {
+    payload.consumed_quantity = consumedQuantity
+    payload.discarded_quantity = discardedQuantity + availableQuantity
+  } else {
+    return Promise.reject(new Error('Unsupported inventory status'))
   }
-  if (mode === 'discarded') {
-    list[idx].discarded = true
-    list[idx].consumed = false
-    list[idx].remainingQuantity = 0
-  }
-  list[idx].updatedAt = nowISO()
-  saveInventoryList(list)
+
+  return requestJson({
+    url: `${INVENTORY_API_URL}/${item.remoteId || item.id}`,
+    method: 'PUT',
+    timeout: 10000,
+    header: {
+      'content-type': 'application/json'
+    },
+    data: payload
+  }).then(() => syncInventoryFromServer())
 }
 
 function computeStatus(item) {
   if (item.consumed) return 'consumed'
   if (item.discarded) return 'discarded'
   if (!item.expireDate) return 'in_stock'
+  const warningRules = resolveWarningRules(item)
   const today = new Date()
   const expire = new Date(item.expireDate + 'T23:59:59')
   const diff = Math.ceil((expire - today) / (1000 * 60 * 60 * 24))
-  if (diff < 0) return 'expired'
-  if (diff <= 3) return 'expiring'
+  if (diff <= 0) return 'expired'
+  if (diff <= warningRules.highRiskDays) return 'high_risk'
+  if (diff <= warningRules.mediumRiskDays) return 'medium_risk'
+  if (diff <= warningRules.lowRiskDays) return 'low_risk'
   return 'in_stock'
 }
 
 function getStatusText(status) {
   const map = {
     in_stock: '正常',
-    expiring: '临期',
+    low_risk: '低风险',
+    medium_risk: '中风险',
+    high_risk: '高风险',
     expired: '过期',
     consumed: '已使用',
     discarded: '已丢弃'
@@ -628,11 +1070,11 @@ function getRecipeSortIndex(recipe) {
 }
 
 function getRecipeRecommendations() {
-  const inventory = getInventory().filter(item => ['in_stock', 'expiring'].includes(item.status))
+  const inventory = getInventory().filter(item => ACTIVE_INVENTORY_STATUSES.includes(item.status))
   const inventoryNames = new Set(inventory.map(item => normalizeIngredient(item.name)))
   const expiringNames = new Set(
     inventory
-      .filter(item => item.status === 'expiring')
+      .filter(item => EXPIRING_STATUSES.includes(item.status))
       .map(item => normalizeIngredient(item.name))
   )
 
@@ -677,7 +1119,7 @@ function formatQuantityText(quantity) {
 }
 
 function getAvailableQuantity(item) {
-  if (!['in_stock', 'expiring'].includes(item.status)) return 0
+  if (!ACTIVE_INVENTORY_STATUSES.includes(item.status)) return 0
   const quantity = item.remainingQuantity !== undefined && item.remainingQuantity !== ''
     ? Number(item.remainingQuantity)
     : Number(item.quantity)
@@ -754,9 +1196,17 @@ function getPurchaseSuggestions() {
 
 function getReminderSummary() {
   const inventory = getInventory()
-  const expiring = inventory.filter(item => item.status === 'expiring')
+  const lowRisk = inventory.filter(item => item.status === 'low_risk')
+  const mediumRisk = inventory.filter(item => item.status === 'medium_risk')
+  const highRisk = inventory.filter(item => item.status === 'high_risk')
   const expired = inventory.filter(item => item.status === 'expired')
-  return { expiring, expired }
+  return {
+    expiring: [...highRisk, ...mediumRisk, ...lowRisk],
+    lowRisk,
+    mediumRisk,
+    highRisk,
+    expired
+  }
 }
 
 function getWeekStart(date) {
@@ -819,8 +1269,11 @@ function getStats() {
   const used = list.filter(item => item.consumed).length
   const discarded = list.filter(item => item.discarded).length
   const expired = list.filter(item => item.status === 'expired').length
+  const lowRisk = list.filter(item => item.status === 'low_risk').length
+  const mediumRisk = list.filter(item => item.status === 'medium_risk').length
+  const highRisk = list.filter(item => item.status === 'high_risk').length
   const handled = list.filter(item => item.status === 'consumed' || item.status === 'discarded').length
-  const reminderTargets = list.filter(item => ['expiring', 'expired', 'consumed', 'discarded'].includes(item.status)).length
+  const reminderTargets = list.filter(item => [...EXPIRING_STATUSES, 'expired', 'consumed', 'discarded'].includes(item.status)).length
   const wasteRate = total ? Math.round(((expired + discarded) / total) * 100) : 0
 
   const weekStart = getWeekStart(new Date())
@@ -852,6 +1305,12 @@ function getStats() {
     used,
     expired,
     discarded,
+    riskStages: {
+      lowRisk,
+      mediumRisk,
+      highRisk,
+      expired
+    },
     utilizationRate: total ? Math.round((used / total) * 100) : 0,
     reminderHandleRate: reminderTargets ? Math.round((handled / reminderTargets) * 100) : 0,
     wasteRate,
@@ -878,6 +1337,7 @@ function getCategories() {
 module.exports = {
   getSettings,
   saveSettings,
+  syncInventoryFromServer,
   getInventory,
   upsertInventory,
   deleteInventory,
@@ -887,5 +1347,6 @@ module.exports = {
   getPurchaseSuggestions,
   getReminderSummary,
   getStats,
-  getCategories
+  getCategories,
+  getCategoryWarningRules
 }

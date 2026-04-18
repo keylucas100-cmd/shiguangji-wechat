@@ -39,17 +39,21 @@ Page({
     }
   },
   refreshList() {
-    const allSuggestions = store.getPurchaseSuggestions()
-    const activeKeys = allSuggestions.map(item => item.dismissKey)
-    const hiddenSuggestionKeys = this.data.hiddenSuggestionKeys.filter(key => activeKeys.includes(key))
-    if (hiddenSuggestionKeys.length !== this.data.hiddenSuggestionKeys.length) {
-      saveDismissedSuggestions(hiddenSuggestionKeys)
-    }
+    store.syncInventoryFromServer()
+      .catch(() => null)
+      .finally(() => {
+        const allSuggestions = store.getPurchaseSuggestions()
+        const activeKeys = allSuggestions.map(item => item.dismissKey)
+        const hiddenSuggestionKeys = this.data.hiddenSuggestionKeys.filter(key => activeKeys.includes(key))
+        if (hiddenSuggestionKeys.length !== this.data.hiddenSuggestionKeys.length) {
+          saveDismissedSuggestions(hiddenSuggestionKeys)
+        }
 
-    this.setData({
-      hiddenSuggestionKeys,
-      list: allSuggestions.filter(item => !hiddenSuggestionKeys.includes(item.dismissKey))
-    })
+        this.setData({
+          hiddenSuggestionKeys,
+          list: allSuggestions.filter(item => !hiddenSuggestionKeys.includes(item.dismissKey))
+        })
+      })
   },
   showSuggestionActions(e) {
     const key = e.currentTarget.dataset.key

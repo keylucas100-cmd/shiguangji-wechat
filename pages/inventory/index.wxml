@@ -36,7 +36,7 @@
               <view class="item-top">
                 <view class="title">{{item.name}}</view>
                 <view class="quantity">{{item.quantity}}{{item.unit}}</view>
-                <view class="tag status-{{item.status}}">{{item.statusText}}</view>
+                <view class="tag status-{{item.displayStatus}}">{{item.statusText}}</view>
               </view>
               <view class="item-bottom">
                 <view class="expire-line">到期日：{{item.expireDate || '未填写'}}</view>
@@ -89,7 +89,7 @@
         </view>
 
         <view class="form-item">
-          <view class="label">购买日期</view>
+          <view class="label">购买日期（选填）</view>
           <picker mode="date" value="{{editForm.purchaseDate}}" end="{{today}}" bindchange="onEditPurchaseDateChange">
             <view wx:if="{{editForm.purchaseDate}}" class="picker">{{editForm.purchaseDate}}</view>
             <view wx:else class="picker picker-placeholder">请选择购买日期</view>
@@ -97,7 +97,7 @@
         </view>
 
         <view class="form-item">
-          <view class="label">出厂日期</view>
+          <view class="label">出厂日期（选填）</view>
           <picker mode="date" value="{{editForm.productionDate}}" bindchange="onEditProductionDateChange">
             <view wx:if="{{editForm.productionDate}}" class="picker">{{editForm.productionDate}}</view>
             <view wx:else class="picker picker-placeholder">请选择出厂日期</view>
@@ -105,20 +105,59 @@
         </view>
 
         <view class="form-item">
-          <view class="label">保质期</view>
+          <view class="label">保质期（选填）</view>
           <input class="input" type="number" value="{{editForm.shelfLifeDays}}" data-field="shelfLifeDays" bindinput="onEditInput" placeholder="请输入保质期天数" />
         </view>
 
         <view class="form-item">
+          <view class="label">预警规则（可修改）</view>
+          <view class="rule-card {{editForm.category ? 'is-ready' : ''}}" bindtap="openEditWarningRuleModal">
+            <view wx:if="{{editForm.category}}">
+              <view class="rule-card-value">{{editForm.lowRiskDays}} / {{editForm.mediumRiskDays}} / {{editForm.highRiskDays}}</view>
+            </view>
+            <view wx:else class="rule-card-placeholder">选分类后自动带出</view>
+          </view>
+        </view>
+
+        <view class="form-item">
           <view class="label">预计到期日期</view>
-          <view wx:if="{{editForm.expireDate}}" class="picker readonly-picker">{{editForm.expireDate}}</view>
-          <view wx:else class="picker picker-placeholder">填写出厂日期和保质期后自动计算</view>
+          <picker mode="date" value="{{editForm.expireDate}}" bindchange="onEditExpireDateChange">
+            <view wx:if="{{editForm.expireDate}}" class="picker">{{editForm.expireDate}}</view>
+            <view wx:else class="picker picker-placeholder">可直接选择预计到期日期</view>
+          </picker>
+          <view class="picker-hint">填了出厂日期和保质期后，会自动计算到期日期</view>
         </view>
 
         <view class="modal-actions">
           <view class="modal-btn secondary" bindtap="closeEdit">取消</view>
           <view class="modal-btn primary" bindtap="saveEdit">保存修改</view>
         </view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{editWarningRuleModalVisible}}" class="rule-modal-mask">
+    <view class="rule-modal">
+      <view class="rule-modal-title">默认规则</view>
+      <view class="edit-row">
+        <view class="form-item edit-flex">
+          <view class="mini-label">低风险阈值</view>
+          <input class="input" type="number" value="{{editWarningRuleDraft.lowRiskDays}}" data-field="lowRiskDays" bindinput="onEditWarningRuleDraftInput" placeholder="低风险" />
+        </view>
+        <view class="edit-gap"></view>
+        <view class="form-item edit-flex">
+          <view class="mini-label">中风险阈值</view>
+          <input class="input" type="number" value="{{editWarningRuleDraft.mediumRiskDays}}" data-field="mediumRiskDays" bindinput="onEditWarningRuleDraftInput" placeholder="中风险" />
+        </view>
+        <view class="edit-gap"></view>
+        <view class="form-item edit-flex">
+          <view class="mini-label">高风险阈值</view>
+          <input class="input" type="number" value="{{editWarningRuleDraft.highRiskDays}}" data-field="highRiskDays" bindinput="onEditWarningRuleDraftInput" placeholder="高风险" />
+        </view>
+      </view>
+      <view class="rule-modal-actions">
+        <view class="rule-modal-btn secondary" bindtap="closeEditWarningRuleModal">取消</view>
+        <view class="rule-modal-btn primary" bindtap="confirmEditWarningRuleModal">确定</view>
       </view>
     </view>
   </view>

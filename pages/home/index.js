@@ -78,6 +78,24 @@ function sortByExpireDate(a, b) {
   return String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || ''))
 }
 
+function getReminderStyle(status) {
+  if (status === 'high_risk') {
+    return { badgeClass: 'badge-danger', itemClass: 'item-danger' }
+  }
+  if (status === 'medium_risk') {
+    return { badgeClass: 'badge-orange', itemClass: 'item-orange' }
+  }
+  return { badgeClass: 'badge-warning', itemClass: 'item-warning' }
+}
+
+function getDaysToExpire(expireDate) {
+  if (!expireDate) return Number.MAX_SAFE_INTEGER
+  const today = new Date()
+  const expire = new Date(`${expireDate}T23:59:59`)
+  const diff = Math.ceil((expire - today) / (1000 * 60 * 60 * 24))
+  return Number.isFinite(diff) ? diff : Number.MAX_SAFE_INTEGER
+}
+
 Page({
   data: {
     themeKey: 'green',
@@ -90,6 +108,12 @@ Page({
     expiringList: []
   },
   onShow() {
+    this.refreshHomeData()
+  },
+  refreshHomeData() {
+    store.syncInventoryFromServer()
+      .catch(() => null)
+      .finally(() => {
     const settings = store.getSettings()
     const inventory = store.getInventory()
     const reminders = store.getReminderSummary()
@@ -107,43 +131,20 @@ Page({
       hasMorePurchaseSuggestions: purchaseData.hasMorePurchaseSuggestions,
       hasMoreExpiringReminders: expiringReminders.length > 3,
       expiringList: expiringReminders.slice(0, 3).map(item => {
-        let daysText = '临期'
-        let badgeClass = 'badge-warning'
-        let itemClass = 'item-warning'
-      
-        if (item.expireDate) {
-          const today = new Date()
-          const expire = new Date(item.expireDate + 'T23:59:59')
-          const diff = Math.ceil((expire - today) / (1000 * 60 * 60 * 24))
-      
-          if (diff <= 0) {
-            daysText = '今天到期'
-            badgeClass = 'badge-danger'
-            itemClass = 'item-danger'
-          } else if (diff === 1) {
-            daysText = '1天后到期'
-            badgeClass = 'badge-danger'
-            itemClass = 'item-danger'
-          } else if (diff === 2) {
-            daysText = '2天后到期'
-            badgeClass = 'badge-orange'
-            itemClass = 'item-orange'
-          } else {
-            daysText = `${diff}天后到期`
-            badgeClass = 'badge-warning'
-            itemClass = 'item-warning'
-          }
-        }
-      
+        const reminderStyle = getReminderStyle(item.status)
+        const badgeClass = reminderStyle.badgeClass
+        const itemClass = reminderStyle.itemClass
+        const days = getDaysToExpire(item.expireDate)
+
         return {
           ...item,
-          statusText: store.getStatusText(item.status),
-          daysText,
+          daysText: days === Number.MAX_SAFE_INTEGER ? '到期时间待补充' : `${Math.max(days, 0)}天后到期`,
           badgeClass,
           itemClass
         }
       })
-    })
+        })
+      })
   },
   goInventory() {
     wx.switchTab({ url: '/pages/inventory/index' })

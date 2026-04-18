@@ -3,11 +3,14 @@ const theme = require('../../utils/theme')
 const itemActions = ['编辑', '已使用', '已丢弃', '删除']
 const cardPressDuration = 150
 const statusOrder = {
-  expiring: 0,
-  in_stock: 1,
-  expired: 2,
-  consumed: 3,
-  discarded: 4
+  expired: 0,
+  high_risk: 1,
+  medium_risk: 2,
+  low_risk: 3,
+  expiring: 4,
+  in_stock: 5,
+  consumed: 6,
+  discarded: 7
 }
 
 function formatDate(date) {
@@ -15,6 +18,10 @@ function formatDate(date) {
   const m = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
   return `${y}-${m}-${day}`
+}
+
+function isExpiringStatus(status) {
+  return ['low_risk', 'medium_risk', 'high_risk', 'expiring'].includes(status)
 }
 
 function calculateExpireDate(productionDate, shelfLifeDays) {
@@ -26,6 +33,10 @@ function calculateExpireDate(productionDate, shelfLifeDays) {
 
   expire.setDate(expire.getDate() + days)
   return formatDate(expire)
+}
+
+function getResolvedExpireDate(form) {
+  return calculateExpireDate(form.productionDate, form.shelfLifeDays) || form.expireDate || ''
 }
 
 function getToday() {
@@ -93,8 +104,56 @@ function createEmptyEditForm() {
     purchaseDate: '',
     productionDate: '',
     shelfLifeDays: '',
+    lowRiskDays: '',
+    mediumRiskDays: '',
+    highRiskDays: '',
     expireDate: ''
   }
+}
+
+function createWarningRuleDraft(source = {}) {
+  return {
+    lowRiskDays: String(source.lowRiskDays || ''),
+    mediumRiskDays: String(source.mediumRiskDays || ''),
+    highRiskDays: String(source.highRiskDays || '')
+  }
+}
+
+function formatRuleValue(value, fallback) {
+  const number = Number(value)
+  if (Number.isInteger(number) && number > 0) return String(number)
+  return String(fallback)
+}
+
+function getWarningRuleFormData(category, source = {}) {
+  const defaults = store.getCategoryWarningRules(category)
+  return {
+    lowRiskDays: formatRuleValue(source.lowRiskDays, defaults.lowRiskDays),
+    mediumRiskDays: formatRuleValue(source.mediumRiskDays, defaults.mediumRiskDays),
+    highRiskDays: formatRuleValue(source.highRiskDays, defaults.highRiskDays)
+  }
+}
+
+function buildWarningRuleUpdates(prefix, category, source = {}) {
+  const rules = getWarningRuleFormData(category, source)
+  return {
+    [`${prefix}.lowRiskDays`]: rules.lowRiskDays,
+    [`${prefix}.mediumRiskDays`]: rules.mediumRiskDays,
+    [`${prefix}.highRiskDays`]: rules.highRiskDays
+  }
+}
+
+function getWarningRuleValidationMessage(form) {
+  const lowRiskDays = Number(form.lowRiskDays)
+  const mediumRiskDays = Number(form.mediumRiskDays)
+  const highRiskDays = Number(form.highRiskDays)
+  const isValid = [lowRiskDays, mediumRiskDays, highRiskDays].every(value => Number.isInteger(value) && value > 0)
+
+  if (!isValid) return '请输入正确的预警阈值'
+  if (lowRiskDays < mediumRiskDays || mediumRiskDays < highRiskDays) {
+    return '请保持低风险阈值 ≥ 中风险阈值 ≥ 高风险阈值'
+  }
+  return ''
 }
 
 Page({
@@ -117,6 +176,8 @@ Page({
     animatingItemId: '',
     editCategoryIndex: 0,
     editUnitIndex: 0,
+    editWarningRuleModalVisible: false,
+    editWarningRuleDraft: createWarningRuleDraft(),
     editForm: createEmptyEditForm(),
     openedItemId: '',
     list: []
@@ -135,14 +196,15 @@ Page({
   loadList() {
     let list = store.getInventory().map(item => ({
       ...item,
+      displayStatus: isExpiringStatus(item.status) ? 'expiring' : item.status,
       category: getDisplayCategory(item),
       categoryTheme: getCategoryTheme(getDisplayCategory(item)),
       categoryImage: getCategoryImage(getDisplayCategory(item)),
-      statusText: store.getStatusText(item.status),
+      statusText: isExpiringStatus(item.status) ? '临期' : store.getStatusText(item.status),
       shelfLifeText: item.shelfLifeDays ? `${item.shelfLifeDays}天` : '未填写'
     }))
     if (this.data.filter !== 'all') {
-      list = list.filter(item => item.status === this.data.filter)
+      list = list.filter(item => this.data.filter === 'expiring' ? isExpiringStatus(item.status) : item.status === this.data.filter)
     }
     list = list.sort(sortInventoryItems)
     this.setData({ list })
@@ -231,6 +293,7 @@ Page({
     const editForm = {
       ...createEmptyEditForm(),
       ...item,
+      ...getWarningRuleFormData(item.category, item),
       quantity: item.quantity ? String(item.quantity) : '',
       shelfLifeDays: item.shelfLifeDays ? String(item.shelfLifeDays) : ''
     }
@@ -239,7 +302,9 @@ Page({
       editVisible: true,
       editForm,
       editCategoryIndex: Math.max(0, this.data.categories.findIndex(v => v === editForm.category)),
-      editUnitIndex: getUnitIndex(this.data.units, editForm.unit)
+      editUnitIndex: getUnitIndex(this.data.units, editForm.unit),
+      editWarningRuleModalVisible: false,
+      editWarningRuleDraft: createWarningRuleDraft()
     })
   },
   closeEdit() {
@@ -247,7 +312,9 @@ Page({
       editVisible: false,
       editForm: createEmptyEditForm(),
       editCategoryIndex: 0,
-      editUnitIndex: 0
+      editUnitIndex: 0,
+      editWarningRuleModalVisible: false,
+      editWarningRuleDraft: createWarningRuleDraft()
     })
   },
   onEditInput(e) {
@@ -258,9 +325,11 @@ Page({
   },
   onEditCategoryChange(e) {
     const idx = Number(e.detail.value)
+    const category = this.data.categories[idx]
     this.setData({
       editCategoryIndex: idx,
-      'editForm.category': this.data.categories[idx]
+      'editForm.category': category,
+      ...buildWarningRuleUpdates('editForm', category)
     })
   },
   onEditUnitChange(e) {
@@ -272,17 +341,14 @@ Page({
   },
   onEditPurchaseDateChange(e) {
     const purchaseDate = e.detail.value
-    const updates = {
-      'editForm.purchaseDate': purchaseDate
-    }
-
     if (this.data.editForm.productionDate && this.data.editForm.productionDate > purchaseDate) {
-      updates['editForm.productionDate'] = ''
-      updates['editForm.expireDate'] = ''
       wx.showToast({ title: '出厂日期不能晚于购买日期', icon: 'none' })
+      return
     }
 
-    this.setData(updates)
+    this.setData({
+      'editForm.purchaseDate': purchaseDate
+    })
   },
   onEditProductionDateChange(e) {
     const productionDate = e.detail.value
@@ -299,8 +365,51 @@ Page({
   },
   updateEditExpireDate() {
     const { productionDate, shelfLifeDays } = this.data.editForm
+    const expireDate = calculateExpireDate(productionDate, shelfLifeDays)
+    if (!expireDate) return
+
     this.setData({
-      'editForm.expireDate': calculateExpireDate(productionDate, shelfLifeDays)
+      'editForm.expireDate': expireDate
+    })
+  },
+  onEditExpireDateChange(e) {
+    this.setData({
+      'editForm.expireDate': e.detail.value
+    })
+  },
+  openEditWarningRuleModal() {
+    if (!this.data.editForm.category) return
+    this.setData({
+      editWarningRuleModalVisible: true,
+      editWarningRuleDraft: createWarningRuleDraft(this.data.editForm)
+    })
+  },
+  closeEditWarningRuleModal() {
+    this.setData({
+      editWarningRuleModalVisible: false,
+      editWarningRuleDraft: createWarningRuleDraft()
+    })
+  },
+  onEditWarningRuleDraftInput(e) {
+    const field = e.currentTarget.dataset.field
+    this.setData({
+      [`editWarningRuleDraft.${field}`]: e.detail.value
+    })
+  },
+  confirmEditWarningRuleModal() {
+    const draft = this.data.editWarningRuleDraft
+    const warningRuleMessage = getWarningRuleValidationMessage(draft)
+    if (warningRuleMessage) {
+      wx.showToast({ title: warningRuleMessage, icon: 'none' })
+      return
+    }
+
+    this.setData({
+      'editForm.lowRiskDays': draft.lowRiskDays,
+      'editForm.mediumRiskDays': draft.mediumRiskDays,
+      'editForm.highRiskDays': draft.highRiskDays,
+      editWarningRuleModalVisible: false,
+      editWarningRuleDraft: createWarningRuleDraft()
     })
   },
   saveEdit() {
@@ -326,38 +435,54 @@ Page({
       return
     }
 
-    if (!form.purchaseDate) {
-      wx.showToast({ title: '购买日期不能为空', icon: 'none' })
-      return
-    }
-
-    if (!form.productionDate) {
-      wx.showToast({ title: '出厂日期不能为空', icon: 'none' })
-      return
-    }
-
-    if (form.purchaseDate < form.productionDate) {
+    if (form.purchaseDate && form.productionDate && form.purchaseDate < form.productionDate) {
       wx.showToast({ title: '购买日期不能早于出厂日期', icon: 'none' })
       return
     }
 
     const shelfLifeDays = Number(form.shelfLifeDays)
-    if (!Number.isInteger(shelfLifeDays) || shelfLifeDays <= 0) {
+    if (form.shelfLifeDays && (!Number.isInteger(shelfLifeDays) || shelfLifeDays <= 0)) {
       wx.showToast({ title: '请输入正确的保质期天数', icon: 'none' })
       return
     }
 
+    const warningRuleMessage = getWarningRuleValidationMessage(form)
+    if (warningRuleMessage) {
+      wx.showToast({ title: warningRuleMessage, icon: 'none' })
+      return
+    }
+
+    const expireDate = getResolvedExpireDate(form)
+    if (!expireDate) {
+      wx.showToast({ title: '请填写预计到期日期，或补充出厂日期和保质期', icon: 'none' })
+      return
+    }
+
+    wx.showLoading({ title: '保存中', mask: true })
+
     store.upsertInventory({
       ...form,
       quantity: Number(form.quantity),
-      remainingQuantity: form.consumed || form.discarded ? 0 : Number(form.quantity),
-      shelfLifeDays,
-      expireDate: calculateExpireDate(form.productionDate, shelfLifeDays)
+      remainingQuantity: form.consumed || form.discarded
+        ? 0
+        : Math.max(0, Number(form.quantity) - Number(form.consumedQuantity || 0) - Number(form.discardedQuantity || 0)),
+      shelfLifeDays: Number.isInteger(shelfLifeDays) && shelfLifeDays > 0 ? shelfLifeDays : '',
+      lowRiskDays: Number(form.lowRiskDays),
+      mediumRiskDays: Number(form.mediumRiskDays),
+      highRiskDays: Number(form.highRiskDays),
+      expireDate
     })
-
-    this.closeEdit()
-    this.loadList()
-    wx.showToast({ title: '修改成功', icon: 'success' })
+      .then(() => {
+        this.closeEdit()
+        this.loadList()
+        wx.showToast({ title: '修改成功', icon: 'success' })
+      })
+      .catch(err => {
+        wx.showToast({ title: err.message || '修改失败', icon: 'none' })
+      })
+      .finally(() => {
+        wx.hideLoading()
+      })
   },
   markUsed(e) {
     this.updateItemStatus(e.currentTarget.dataset.id, 'consumed')
@@ -369,11 +494,31 @@ Page({
     this.deleteItem(e.currentTarget.dataset.id)
   },
   updateItemStatus(id, status) {
+    wx.showLoading({ title: '处理中', mask: true })
     store.updateInventoryStatus(id, status)
-    this.loadList()
+      .then(() => {
+        this.loadList()
+        wx.showToast({ title: '已更新', icon: 'success' })
+      })
+      .catch(err => {
+        wx.showToast({ title: err.message || '处理失败', icon: 'none' })
+      })
+      .finally(() => {
+        wx.hideLoading()
+      })
   },
   deleteItem(id) {
+    wx.showLoading({ title: '删除中', mask: true })
     store.deleteInventory(id)
-    this.loadList()
+      .then(() => {
+        this.loadList()
+        wx.showToast({ title: '已删除', icon: 'success' })
+      })
+      .catch(err => {
+        wx.showToast({ title: err.message || '删除失败', icon: 'none' })
+      })
+      .finally(() => {
+        wx.hideLoading()
+      })
   }
 })

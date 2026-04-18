@@ -18,15 +18,27 @@
         </view>
       </view>
 
-      <view class="form-item">
-        <view class="label">分类</view>
-        <view class="field-row">
-          <view class="field-control field-main {{form.category ? 'has-clear' : ''}}">
-            <picker range="{{categories}}" value="{{categoryIndex}}" bindchange="onCategoryChange">
-              <view wx:if="{{form.category}}" class="picker">{{form.category}}</view>
-              <view wx:else class="picker picker-placeholder">请选择分类</view>
-            </picker>
-            <view wx:if="{{form.category}}" class="clear-btn" data-field="category" bindtap="clearField">清空</view>
+      <view class="row">
+        <view class="form-item flex-item">
+          <view class="label">分类</view>
+          <view class="field-row">
+            <view class="field-control field-main {{form.category ? 'has-clear' : ''}}">
+              <picker range="{{categories}}" value="{{categoryIndex}}" bindchange="onCategoryChange">
+                <view wx:if="{{form.category}}" class="picker">{{form.category}}</view>
+                <view wx:else class="picker picker-placeholder">请选择分类</view>
+              </picker>
+              <view wx:if="{{form.category}}" class="clear-btn" data-field="category" bindtap="clearField">清空</view>
+            </view>
+          </view>
+        </view>
+        <view class="gap"></view>
+        <view class="form-item flex-item">
+          <view class="label">默认预警</view>
+          <view class="rule-card {{form.category ? 'is-ready' : ''}}" bindtap="openWarningRuleModal">
+            <view wx:if="{{form.category}}">
+              <view class="rule-card-value">{{form.lowRiskDays}} / {{form.mediumRiskDays}} / {{form.highRiskDays}}</view>
+            </view>
+            <view wx:else class="rule-card-placeholder">选分类后自动带出</view>
           </view>
         </view>
       </view>
@@ -59,7 +71,7 @@
       </view>
 
       <view class="form-item">
-        <view class="label">购买日期</view>
+        <view class="label">购买日期（选填）</view>
         <view class="field-row">
           <view class="field-control field-main {{form.purchaseDate ? 'has-clear' : ''}}">
             <picker mode="date" value="{{form.purchaseDate}}" end="{{today}}" bindchange="onPurchaseDateChange">
@@ -75,7 +87,7 @@
       </view>
 
       <view class="form-item">
-        <view class="label">出厂日期</view>
+        <view class="label">出厂日期（选填）</view>
         <view class="field-row">
           <view class="field-control field-main {{form.productionDate ? 'has-clear' : ''}}">
             <picker mode="date" value="{{form.productionDate}}" bindchange="onProductionDateChange">
@@ -91,7 +103,7 @@
       </view>
 
       <view class="form-item">
-        <view class="label">保质期</view>
+        <view class="label">保质期（选填）</view>
         <view class="field-row">
           <view class="field-control field-main {{form.shelfLifeDays ? 'has-clear' : ''}}">
             <input class="input" type="number" placeholder="请输入保质期天数" placeholder-class="placeholder" value="{{form.shelfLifeDays}}" data-field="shelfLifeDays" bindinput="onInput" />
@@ -102,8 +114,10 @@
 
       <view class="form-item">
         <view class="label">预计到期日期</view>
-        <view wx:if="{{form.expireDate}}" class="picker readonly-picker">{{form.expireDate}}</view>
-        <view wx:else class="picker picker-placeholder">填写出厂日期和保质期后自动计算</view>
+        <picker mode="date" value="{{form.expireDate}}" bindchange="onExpireDateChange">
+          <view wx:if="{{form.expireDate}}" class="picker">{{form.expireDate}}</view>
+          <view wx:else class="picker picker-placeholder">可直接选择预计到期日期</view>
+        </picker>
       </view>
       <view class="form-actions">
         <button class="btn clear-form-btn" bindtap="clearForm">一键清空</button>
@@ -114,6 +128,32 @@
 
   <view wx:if="{{clearToastVisible}}" class="clear-toast">
     <view class="clear-toast-text">录入内容已清空</view>
+  </view>
+
+  <view wx:if="{{warningRuleModalVisible}}" class="rule-modal-mask">
+    <view class="rule-modal">
+      <view class="rule-modal-title">默认规则</view>
+      <view class="rule-modal-row">
+        <view class="form-item flex-item compact-item">
+          <view class="mini-label">低风险阈值</view>
+          <input class="input" type="number" placeholder="4" placeholder-class="placeholder" value="{{warningRuleDraft.lowRiskDays}}" data-field="lowRiskDays" bindinput="onWarningRuleDraftInput" />
+        </view>
+        <view class="gap"></view>
+        <view class="form-item flex-item compact-item">
+          <view class="mini-label">中风险阈值</view>
+          <input class="input" type="number" placeholder="2" placeholder-class="placeholder" value="{{warningRuleDraft.mediumRiskDays}}" data-field="mediumRiskDays" bindinput="onWarningRuleDraftInput" />
+        </view>
+        <view class="gap"></view>
+        <view class="form-item flex-item compact-item">
+          <view class="mini-label">高风险阈值</view>
+          <input class="input" type="number" placeholder="1" placeholder-class="placeholder" value="{{warningRuleDraft.highRiskDays}}" data-field="highRiskDays" bindinput="onWarningRuleDraftInput" />
+        </view>
+      </view>
+      <view class="rule-modal-actions">
+        <view class="rule-modal-btn secondary" bindtap="closeWarningRuleModal">取消</view>
+        <view class="rule-modal-btn primary" bindtap="confirmWarningRuleModal">确定</view>
+      </view>
+    </view>
   </view>
 
   <view wx:if="{{voicePanelVisible}}" class="voice-mask">

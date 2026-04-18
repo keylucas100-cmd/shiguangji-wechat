@@ -70,16 +70,20 @@ Page({
     activeRecipe: null
   },
   onShow() {
-    const settings = store.getSettings()
-    const themeData = theme.getThemeData(settings)
-    const allRecipes = store.getRecipeRecommendations().map(decorateRecipe)
-    this.setData({
-      ...themeData,
-      allRecipes,
-      categoryOptions: getCategoryOptions(allRecipes)
-    }, () => {
-      this.refreshRecipeList()
-    })
+    store.syncInventoryFromServer()
+      .catch(() => null)
+      .finally(() => {
+        const settings = store.getSettings()
+        const themeData = theme.getThemeData(settings)
+        const allRecipes = store.getRecipeRecommendations().map(decorateRecipe)
+        this.setData({
+          ...themeData,
+          allRecipes,
+          categoryOptions: getCategoryOptions(allRecipes)
+        }, () => {
+          this.refreshRecipeList()
+        })
+      })
   },
   refreshRecipeList() {
     const { allRecipes, categoryFilter, sortMode } = this.data

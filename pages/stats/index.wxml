@@ -53,6 +53,7 @@
   <view class="card note-card">
     <view class="section-title">说明</view>
     <view class="note-line">总记录：{{stats.total}} 样</view>
+    <view class="note-line">低风险：{{stats.riskStages.lowRisk}} 样 · 中风险：{{stats.riskStages.mediumRisk}} 样 · 高风险：{{stats.riskStages.highRisk}} 样</view>
     <view class="note-line">已使用：{{stats.used}} 样 · 已过期：{{stats.expired}} 样 · 已丢弃：{{stats.discarded}} 样</view>
   </view>
 </view>

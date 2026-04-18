@@ -23,6 +23,10 @@ function calculateExpireDate(productionDate, shelfLifeDays) {
   return formatDate(expire)
 }
 
+function getResolvedExpireDate(form) {
+  return calculateExpireDate(form.productionDate, form.shelfLifeDays) || form.expireDate || ''
+}
+
 function createDefaultForm() {
   return {
     id: '',
@@ -33,11 +37,67 @@ function createDefaultForm() {
     purchaseDate: '',
     productionDate: '',
     shelfLifeDays: '',
+    lowRiskDays: '',
+    mediumRiskDays: '',
+    highRiskDays: '',
     expireDate: '',
     inputType: 'manual',
     sourceText: '',
     remainingQuantity: 1
   }
+}
+
+function createWarningRuleDraft(source = {}) {
+  return {
+    lowRiskDays: String(source.lowRiskDays || ''),
+    mediumRiskDays: String(source.mediumRiskDays || ''),
+    highRiskDays: String(source.highRiskDays || '')
+  }
+}
+
+function formatRuleValue(value, fallback) {
+  const number = Number(value)
+  if (Number.isInteger(number) && number > 0) return String(number)
+  return String(fallback)
+}
+
+function getWarningRuleFormData(category, source = {}) {
+  const defaults = store.getCategoryWarningRules(category)
+  return {
+    lowRiskDays: formatRuleValue(source.lowRiskDays, defaults.lowRiskDays),
+    mediumRiskDays: formatRuleValue(source.mediumRiskDays, defaults.mediumRiskDays),
+    highRiskDays: formatRuleValue(source.highRiskDays, defaults.highRiskDays)
+  }
+}
+
+function buildWarningRuleUpdates(prefix, category, source = {}) {
+  const rules = getWarningRuleFormData(category, source)
+  return {
+    [`${prefix}.lowRiskDays`]: rules.lowRiskDays,
+    [`${prefix}.mediumRiskDays`]: rules.mediumRiskDays,
+    [`${prefix}.highRiskDays`]: rules.highRiskDays
+  }
+}
+
+function clearWarningRuleUpdates(prefix) {
+  return {
+    [`${prefix}.lowRiskDays`]: '',
+    [`${prefix}.mediumRiskDays`]: '',
+    [`${prefix}.highRiskDays`]: ''
+  }
+}
+
+function getWarningRuleValidationMessage(form) {
+  const lowRiskDays = Number(form.lowRiskDays)
+  const mediumRiskDays = Number(form.mediumRiskDays)
+  const highRiskDays = Number(form.highRiskDays)
+  const isValid = [lowRiskDays, mediumRiskDays, highRiskDays].every(value => Number.isInteger(value) && value > 0)
+
+  if (!isValid) return '请输入正确的预警阈值'
+  if (lowRiskDays < mediumRiskDays || mediumRiskDays < highRiskDays) {
+    return '请保持低风险阈值 ≥ 中风险阈值 ≥ 高风险阈值'
+  }
+  return ''
 }
 
 function getUnitIndex(units, unit) {
@@ -336,6 +396,8 @@ Page({
     themeKey: 'green',
     themeColor: '#2fb66d',
     voicePanelVisible: false,
+    warningRuleModalVisible: false,
+    warningRuleDraft: createWarningRuleDraft(),
     clearToastVisible: false,
     voiceText: '',
     form: createDefaultForm()
@@ -351,6 +413,7 @@ Page({
           form: {
             ...createDefaultForm(),
             ...item,
+            ...getWarningRuleFormData(item.category, item),
             quantity: String(item.quantity || 1),
             shelfLifeDays: item.shelfLifeDays ? String(item.shelfLifeDays) : ''
           },
@@ -387,6 +450,7 @@ Page({
         updates['form.category'] = category
         const categoryIndex = this.data.categories.findIndex(v => v === category)
         if (categoryIndex > -1) updates.categoryIndex = categoryIndex
+        Object.assign(updates, buildWarningRuleUpdates('form', category))
       }
     }
 
@@ -397,9 +461,11 @@ Page({
 
   onCategoryChange(e) {
     const idx = Number(e.detail.value)
+    const category = this.data.categories[idx]
     this.setData({
       categoryIndex: idx,
-      'form.category': this.data.categories[idx]
+      'form.category': category,
+      ...buildWarningRuleUpdates('form', category)
     })
   },
 
@@ -413,17 +479,14 @@ Page({
 
   onPurchaseDateChange(e) {
     const purchaseDate = e.detail.value
-    const updates = {
-      'form.purchaseDate': purchaseDate
-    }
-
     if (this.data.form.productionDate && this.data.form.productionDate > purchaseDate) {
-      updates['form.productionDate'] = ''
-      updates['form.expireDate'] = ''
       wx.showToast({ title: '出厂日期不能晚于购买日期', icon: 'none' })
+      return
     }
 
-    this.setData(updates)
+    this.setData({
+      'form.purchaseDate': purchaseDate
+    })
   },
 
   onProductionDateChange(e) {
@@ -442,8 +505,53 @@ Page({
 
   updateExpireDate() {
     const { productionDate, shelfLifeDays } = this.data.form
+    const expireDate = calculateExpireDate(productionDate, shelfLifeDays)
+    if (!expireDate) return
+
     this.setData({
-      'form.expireDate': calculateExpireDate(productionDate, shelfLifeDays)
+      'form.expireDate': expireDate
+    })
+  },
+
+  onExpireDateChange(e) {
+    this.setData({
+      'form.expireDate': e.detail.value
+    })
+  },
+
+  openWarningRuleModal() {
+    if (!this.data.form.category) return
+    this.setData({
+      warningRuleModalVisible: true,
+      warningRuleDraft: createWarningRuleDraft(this.data.form)
+    })
+  },
+  closeWarningRuleModal() {
+    this.setData({
+      warningRuleModalVisible: false,
+      warningRuleDraft: createWarningRuleDraft()
+    })
+  },
+  onWarningRuleDraftInput(e) {
+    const field = e.currentTarget.dataset.field
+    this.setData({
+      [`warningRuleDraft.${field}`]: e.detail.value
+    })
+  },
+  confirmWarningRuleModal() {
+    const draft = this.data.warningRuleDraft
+    const warningRuleMessage = getWarningRuleValidationMessage(draft)
+    if (warningRuleMessage) {
+      wx.showToast({ title: warningRuleMessage, icon: 'none' })
+      return
+    }
+
+    this.setData({
+      'form.lowRiskDays': draft.lowRiskDays,
+      'form.mediumRiskDays': draft.mediumRiskDays,
+      'form.highRiskDays': draft.highRiskDays,
+      warningRuleModalVisible: false,
+      warningRuleDraft: createWarningRuleDraft()
     })
   },
 
@@ -461,6 +569,7 @@ Page({
   
     if (field === 'category') {
       updates.categoryIndex = 0
+      Object.assign(updates, clearWarningRuleUpdates('form'))
     }
 
     if (field === 'unit') {
@@ -469,6 +578,10 @@ Page({
   
     this.setData(updates, () => {
       if (field === 'productionDate' || field === 'shelfLifeDays') {
+        if (!this.data.form.productionDate || !this.data.form.shelfLifeDays) {
+          this.setData({ 'form.expireDate': '' })
+          return
+        }
         this.updateExpireDate()
       }
     })
@@ -481,6 +594,8 @@ Page({
       form: createDefaultForm(),
       categoryIndex: 0,
       unitIndex: 0,
+      warningRuleModalVisible: false,
+      warningRuleDraft: createWarningRuleDraft(),
       clearToastVisible: true
     })
 
@@ -549,6 +664,7 @@ Page({
     if (updates['form.category']) {
       const categoryIndex = this.data.categories.findIndex(v => v === updates['form.category'])
       if (categoryIndex > -1) updates.categoryIndex = categoryIndex
+      Object.assign(updates, buildWarningRuleUpdates('form', updates['form.category'], form))
     }
 
     if (updates['form.unit']) {
@@ -582,6 +698,7 @@ Page({
   
   mockVoiceInput() {
     const today = formatToday()
+    const warningRules = getWarningRuleFormData('蛋奶')
 
     this.setData({
       form: {
@@ -593,6 +710,7 @@ Page({
         purchaseDate: today,
         productionDate: today,
         shelfLifeDays: '3',
+        ...warningRules,
         expireDate: calculateExpireDate(today, '3'),
         sourceText: '添加牛奶，出厂日期今天，保质期3天',
         inputType: 'voice',
@@ -606,6 +724,8 @@ Page({
     this.setData({
       categoryIndex: 0,
       unitIndex: 0,
+      warningRuleModalVisible: false,
+      warningRuleDraft: createWarningRuleDraft(),
       form: createDefaultForm()
     })
   },
@@ -618,46 +738,67 @@ Page({
       return
     }
 
-    if (!form.purchaseDate) {
-      wx.showToast({ title: '购买日期不能为空', icon: 'none' })
+    if (!form.category) {
+      wx.showToast({ title: '请选择分类', icon: 'none' })
       return
     }
 
-    if (!form.productionDate) {
-      wx.showToast({ title: '出厂日期不能为空', icon: 'none' })
+    if (!form.quantity || Number(form.quantity) <= 0) {
+      wx.showToast({ title: '请输入正确数量', icon: 'none' })
       return
     }
 
-    if (!form.shelfLifeDays) {
-      wx.showToast({ title: '保质期不能为空', icon: 'none' })
+    if (!form.unit) {
+      wx.showToast({ title: '请选择单位', icon: 'none' })
       return
     }
 
     const shelfLifeDays = Number(form.shelfLifeDays)
 
-    if (!Number.isInteger(shelfLifeDays) || shelfLifeDays <= 0) {
+    if (form.shelfLifeDays && (!Number.isInteger(shelfLifeDays) || shelfLifeDays <= 0)) {
       wx.showToast({ title: '请输入正确的保质期天数', icon: 'none' })
       return
     }
 
-    if (form.purchaseDate < form.productionDate) {
+    const warningRuleMessage = getWarningRuleValidationMessage(form)
+    if (warningRuleMessage) {
+      wx.showToast({ title: warningRuleMessage, icon: 'none' })
+      return
+    }
+
+    if (form.purchaseDate && form.productionDate && form.purchaseDate < form.productionDate) {
       wx.showToast({ title: '购买日期不能早于出厂日期', icon: 'none' })
       return
     }
 
-    const expireDate = calculateExpireDate(form.productionDate, shelfLifeDays)
+    const expireDate = getResolvedExpireDate(form)
+    if (!expireDate) {
+      wx.showToast({ title: '请填写预计到期日期，或补充出厂日期和保质期', icon: 'none' })
+      return
+    }
+
+    wx.showLoading({ title: '保存中', mask: true })
 
     store.upsertInventory({
       ...form,
-      shelfLifeDays,
+      shelfLifeDays: Number.isInteger(shelfLifeDays) && shelfLifeDays > 0 ? shelfLifeDays : '',
+      lowRiskDays: Number(form.lowRiskDays),
+      mediumRiskDays: Number(form.mediumRiskDays),
+      highRiskDays: Number(form.highRiskDays),
       expireDate,
-      quantity: Number(form.quantity || 1),
-      remainingQuantity: Number(form.quantity || 1)
+      quantity: Number(form.quantity),
+      remainingQuantity: Number(form.quantity)
     })
-
-    this.resetForm()
-
-    wx.showToast({ title: '保存成功', icon: 'success' })
-    setTimeout(() => wx.navigateBack({ delta: 1 }), 500)
+      .then(() => {
+        this.resetForm()
+        wx.showToast({ title: '保存成功', icon: 'success' })
+        setTimeout(() => wx.navigateBack({ delta: 1 }), 500)
+      })
+      .catch(err => {
+        wx.showToast({ title: err.message || '保存失败', icon: 'none' })
+      })
+      .finally(() => {
+        wx.hideLoading()
+      })
   }
 })
