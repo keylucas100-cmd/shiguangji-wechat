@@ -5,6 +5,7 @@ const INVENTORY_API_URL = 'http://127.0.0.1:3000/api/inventory-records'
 const USERS_API_URL = 'http://127.0.0.1:3000/api/users'
 const INGREDIENTS_API_URL = 'http://127.0.0.1:3000/api/ingredients'
 const LOCAL_USER_OPENID = 'wx_localstyles_demo_user'
+const DEFAULT_INVENTORY_USER_ID = 1
 
 let inventorySyncPromise = null
 let currentUserPromise = null
@@ -914,7 +915,7 @@ function syncInventoryFromServer() {
   if (inventorySyncPromise) return inventorySyncPromise
 
   inventorySyncPromise = request({
-    url: `${INVENTORY_API_URL}?page=1&pageSize=1000`,
+    url: `${INVENTORY_API_URL}?user_id=${DEFAULT_INVENTORY_USER_ID}&page=1&pageSize=1000`,
     method: 'GET',
     timeout: 10000,
     header: {
