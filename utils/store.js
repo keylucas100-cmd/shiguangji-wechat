@@ -660,6 +660,49 @@ function parseOptionalDate(value) {
   return text || null;
 }
 
+function getBackendPurchaseDate(item, existingItem) {
+  // The UI treats purchase date as optional, but the current backend requires it.
+  return (
+    parseOptionalDate(item.purchaseDate) ||
+    parseOptionalDate(existingItem && existingItem.purchaseDate) ||
+    formatLocalDate(new Date())
+  );
+}
+
+function getBackendProductionDate(item, existingItem) {
+  // The UI allows using expire date directly, while the current backend still requires production date.
+  return (
+    parseOptionalDate(item.productionDate) ||
+    parseOptionalDate(existingItem && existingItem.productionDate) ||
+    parseOptionalDate(item.purchaseDate) ||
+    parseOptionalDate(existingItem && existingItem.purchaseDate) ||
+    formatLocalDate(new Date())
+  );
+}
+
+function getDateDiffDays(startDate, endDate) {
+  const start = new Date(`${startDate}T00:00:00`);
+  const end = new Date(`${endDate}T00:00:00`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 1;
+
+  return Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)));
+}
+
+function getBackendShelfLifeDays(item, existingItem) {
+  // The UI lets users provide expire date directly, but the backend requires shelf life.
+  const explicitDays =
+    parsePositiveInteger(item.shelfLifeDays) ||
+    parsePositiveInteger(existingItem && existingItem.shelfLifeDays);
+  if (explicitDays) return explicitDays;
+
+  const expireDate =
+    parseOptionalDate(item.expireDate) ||
+    parseOptionalDate(existingItem && existingItem.expireDate);
+  if (!expireDate) return 1;
+
+  return getDateDiffDays(getBackendProductionDate(item, existingItem), expireDate);
+}
+
 function formatDateTimeForSql(value) {
   const date = value instanceof Date ? value : new Date(value || Date.now());
   if (Number.isNaN(date.getTime())) return "";
@@ -679,6 +722,251 @@ function makeIngredientCode() {
 
 function makeLocalInventoryId() {
   return `${LOCAL_INVENTORY_ID_PREFIX}${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function addDaysToLocalDate(date, days) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return formatLocalDate(next);
+}
+
+function createDemoInventoryList() {
+  const today = new Date();
+  const yesterday = addDaysToLocalDate(today, -1);
+  const twoDaysAgo = addDaysToLocalDate(today, -2);
+  const threeDaysAgo = addDaysToLocalDate(today, -3);
+  const todayText = formatLocalDate(today);
+  const tomorrow = addDaysToLocalDate(today, 1);
+  const inTwoDays = addDaysToLocalDate(today, 2);
+  const inFourDays = addDaysToLocalDate(today, 4);
+  const inSevenDays = addDaysToLocalDate(today, 7);
+  const createdAt = nowISO();
+
+  return [
+    {
+      id: "demo_egg",
+      name: "鸡蛋",
+      category: "蛋奶",
+      quantity: 1,
+      unit: "个",
+      purchaseDate: twoDaysAgo,
+      productionDate: twoDaysAgo,
+      shelfLifeDays: 4,
+      lowRiskDays: 6,
+      mediumRiskDays: 3,
+      highRiskDays: 1,
+      expireDate: inTwoDays,
+      remainingQuantity: 1,
+      consumedQuantity: 0,
+      discardedQuantity: 0,
+      createdAt,
+      updatedAt: createdAt,
+      localOnly: true,
+      demo: true,
+    },
+    {
+      id: "demo_cucumber",
+      name: "黄瓜",
+      category: "蔬菜",
+      quantity: 3,
+      unit: "根",
+      purchaseDate: threeDaysAgo,
+      productionDate: threeDaysAgo,
+      shelfLifeDays: 4,
+      lowRiskDays: 4,
+      mediumRiskDays: 2,
+      highRiskDays: 1,
+      expireDate: tomorrow,
+      remainingQuantity: 3,
+      consumedQuantity: 0,
+      discardedQuantity: 0,
+      createdAt,
+      updatedAt: createdAt,
+      localOnly: true,
+      demo: true,
+    },
+    {
+      id: "demo_shrimp",
+      name: "虾",
+      category: "海鲜",
+      quantity: 300,
+      unit: "克",
+      purchaseDate: yesterday,
+      productionDate: yesterday,
+      shelfLifeDays: 3,
+      lowRiskDays: 3,
+      mediumRiskDays: 2,
+      highRiskDays: 1,
+      expireDate: inTwoDays,
+      remainingQuantity: 300,
+      consumedQuantity: 0,
+      discardedQuantity: 0,
+      createdAt,
+      updatedAt: createdAt,
+      localOnly: true,
+      demo: true,
+    },
+    {
+      id: "demo_egg_used",
+      name: "鸡蛋",
+      category: "蛋奶",
+      quantity: 4,
+      unit: "个",
+      purchaseDate: threeDaysAgo,
+      productionDate: threeDaysAgo,
+      shelfLifeDays: 4,
+      lowRiskDays: 6,
+      mediumRiskDays: 3,
+      highRiskDays: 1,
+      expireDate: tomorrow,
+      remainingQuantity: 0,
+      consumedQuantity: 4,
+      discardedQuantity: 0,
+      consumed: true,
+      createdAt,
+      updatedAt: createdAt,
+      localOnly: true,
+      demo: true,
+    },
+    {
+      id: "demo_beef_used",
+      name: "牛肉",
+      category: "肉类",
+      quantity: 1,
+      unit: "斤",
+      purchaseDate: twoDaysAgo,
+      productionDate: twoDaysAgo,
+      shelfLifeDays: 4,
+      lowRiskDays: 5,
+      mediumRiskDays: 3,
+      highRiskDays: 1,
+      expireDate: inTwoDays,
+      remainingQuantity: 0,
+      consumedQuantity: 1,
+      discardedQuantity: 0,
+      consumed: true,
+      createdAt,
+      updatedAt: createdAt,
+      localOnly: true,
+      demo: true,
+    },
+    {
+      id: "demo_green_veg_used",
+      name: "青菜",
+      category: "蔬菜",
+      quantity: 2,
+      unit: "把",
+      purchaseDate: threeDaysAgo,
+      productionDate: threeDaysAgo,
+      shelfLifeDays: 3,
+      lowRiskDays: 4,
+      mediumRiskDays: 2,
+      highRiskDays: 1,
+      expireDate: todayText,
+      remainingQuantity: 0,
+      consumedQuantity: 2,
+      discardedQuantity: 0,
+      consumed: true,
+      createdAt,
+      updatedAt: createdAt,
+      localOnly: true,
+      demo: true,
+    },
+    {
+      id: "demo_green_veg_low_stock",
+      name: "青菜",
+      category: "蔬菜",
+      quantity: 1,
+      unit: "把",
+      purchaseDate: todayText,
+      productionDate: todayText,
+      shelfLifeDays: 3,
+      lowRiskDays: 4,
+      mediumRiskDays: 2,
+      highRiskDays: 1,
+      expireDate: inTwoDays,
+      remainingQuantity: 1,
+      consumedQuantity: 0,
+      discardedQuantity: 0,
+      createdAt,
+      updatedAt: createdAt,
+      localOnly: true,
+      demo: true,
+    },
+    {
+      id: "demo_beef",
+      name: "牛肉",
+      category: "肉类",
+      quantity: 1,
+      unit: "斤",
+      purchaseDate: todayText,
+      productionDate: todayText,
+      shelfLifeDays: 4,
+      lowRiskDays: 5,
+      mediumRiskDays: 3,
+      highRiskDays: 1,
+      expireDate: inFourDays,
+      remainingQuantity: 1,
+      consumedQuantity: 0,
+      discardedQuantity: 0,
+      createdAt,
+      updatedAt: createdAt,
+      localOnly: true,
+      demo: true,
+    },
+    {
+      id: "demo_tofu_high_risk",
+      name: "豆腐",
+      category: "蛋奶",
+      quantity: 1,
+      unit: "盒",
+      purchaseDate: yesterday,
+      productionDate: yesterday,
+      shelfLifeDays: 1,
+      lowRiskDays: 6,
+      mediumRiskDays: 3,
+      highRiskDays: 1,
+      expireDate: todayText,
+      remainingQuantity: 1,
+      consumedQuantity: 0,
+      discardedQuantity: 0,
+      createdAt,
+      updatedAt: createdAt,
+      localOnly: true,
+      demo: true,
+    },
+    {
+      id: "demo_chicken_high_risk",
+      name: "鸡胸肉",
+      category: "肉类",
+      quantity: 2,
+      unit: "块",
+      purchaseDate: twoDaysAgo,
+      productionDate: twoDaysAgo,
+      shelfLifeDays: 3,
+      lowRiskDays: 5,
+      mediumRiskDays: 3,
+      highRiskDays: 1,
+      expireDate: tomorrow,
+      remainingQuantity: 2,
+      consumedQuantity: 0,
+      discardedQuantity: 0,
+      createdAt,
+      updatedAt: createdAt,
+      localOnly: true,
+      demo: true,
+    },
+  ];
+}
+
+function ensureDemoInventorySeeded() {
+  const list = read(INVENTORY_KEY, []);
+  if (Array.isArray(list) && list.some((item) => item && item.demo)) {
+    return getInventory();
+  }
+
+  saveInventoryList([...(Array.isArray(list) ? list : []), ...createDemoInventoryList()]);
+  return getInventory();
 }
 
 function normalizeCategoryName(value) {
@@ -918,10 +1206,10 @@ function buildCreatePayload(item, userId, ingredientId) {
     source_text: item.sourceText || "",
     quantity: parseNumber(item.quantity),
     unit: item.unit,
-    purchase_date: parseOptionalDate(item.purchaseDate),
-    production_date: parseOptionalDate(item.productionDate),
+    purchase_date: getBackendPurchaseDate(item),
+    production_date: getBackendProductionDate(item),
     expire_date: parseOptionalDate(item.expireDate),
-    shelf_life_days: parsePositiveInteger(item.shelfLifeDays) || null,
+    shelf_life_days: getBackendShelfLifeDays(item),
     low_risk_days: warningRules.lowRiskDays,
     medium_risk_days: warningRules.mediumRiskDays,
     high_risk_days: warningRules.highRiskDays,
@@ -977,10 +1265,10 @@ function buildUpdatePayload(item, existingItem, ingredientId) {
         : existingItem.sourceText || "",
     quantity,
     unit: item.unit,
-    purchase_date: parseOptionalDate(item.purchaseDate),
-    production_date: parseOptionalDate(item.productionDate),
+    purchase_date: getBackendPurchaseDate(item, existingItem),
+    production_date: getBackendProductionDate(item, existingItem),
     expire_date: parseOptionalDate(item.expireDate),
-    shelf_life_days: parsePositiveInteger(item.shelfLifeDays) || null,
+    shelf_life_days: getBackendShelfLifeDays(item, existingItem),
     low_risk_days: warningRules.lowRiskDays,
     medium_risk_days: warningRules.mediumRiskDays,
     high_risk_days: warningRules.highRiskDays,
@@ -1090,7 +1378,7 @@ function syncInventoryFromServer() {
     })
     .catch((err) => {
       if (!shouldUseLocalInventoryFallback(err)) throw err;
-      return getInventory();
+      return ensureDemoInventorySeeded();
     })
     .finally(() => {
       inventorySyncPromise = null;
@@ -1461,6 +1749,33 @@ function getPurchaseSuggestions() {
     map[key].count += Number(history[name]) || 0;
     return map;
   }, {});
+
+  const inventoryHistoryCounts = inventory.reduce((map, item) => {
+    const key = normalizeIngredient(item.name);
+    if (!key) return map;
+    if (!map[key]) {
+      map[key] = {
+        name: item.name,
+        count: 0,
+      };
+    }
+    map[key].count += 1;
+    if (!map[key].name && item.name) map[key].name = item.name;
+    return map;
+  }, {});
+
+  Object.keys(inventoryHistoryCounts).forEach((key) => {
+    const inventoryHistory = inventoryHistoryCounts[key];
+    if (!historyMap[key]) {
+      historyMap[key] = {
+        key,
+        name: inventoryHistory.name,
+        count: 0,
+      };
+    }
+    historyMap[key].count = Math.max(historyMap[key].count, inventoryHistory.count);
+    if (!historyMap[key].name && inventoryHistory.name) historyMap[key].name = inventoryHistory.name;
+  });
 
   const stockMap = inventory.reduce((map, item) => {
     const key = normalizeIngredient(item.name);

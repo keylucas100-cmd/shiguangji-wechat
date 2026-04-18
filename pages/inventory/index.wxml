@@ -104,18 +104,26 @@
           </picker>
         </view>
 
-        <view class="form-item">
-          <view class="label">保质期（选填）</view>
-          <input class="input" type="number" value="{{editForm.shelfLifeDays}}" data-field="shelfLifeDays" bindinput="onEditInput" placeholder="请输入保质期天数" />
-        </view>
-
-        <view class="form-item">
-          <view class="label">预警规则（可修改）</view>
-          <view class="rule-card {{editForm.category ? 'is-ready' : ''}}" bindtap="openEditWarningRuleModal">
-            <view wx:if="{{editForm.category}}">
-              <view class="rule-card-value">{{editForm.lowRiskDays}} / {{editForm.mediumRiskDays}} / {{editForm.highRiskDays}}</view>
+        <view class="edit-row">
+          <view class="form-item edit-flex">
+            <view class="label">保质期（选填）</view>
+            <input class="input" type="number" value="{{editForm.shelfLifeDays}}" data-field="shelfLifeDays" bindinput="onEditInput" placeholder="天数" />
+          </view>
+          <view class="edit-gap"></view>
+          <view class="form-item edit-flex">
+            <view class="label">预警规则（可修改）</view>
+            <view class="rule-card {{editForm.category ? 'is-ready' : ''}}" bindtap="openEditWarningRuleModal">
+              <block wx:if="{{editForm.category}}">
+                <view class="rule-card-value">
+                  <text>{{editForm.lowRiskDays}}天</text>
+                  <text class="rule-divider">/</text>
+                  <text>{{editForm.mediumRiskDays}}天</text>
+                  <text class="rule-divider">/</text>
+                  <text>{{editForm.highRiskDays}}天</text>
+                </view>
+              </block>
+              <view wx:else class="rule-card-placeholder">选分类后自动带出</view>
             </view>
-            <view wx:else class="rule-card-placeholder">选分类后自动带出</view>
           </view>
         </view>
 
@@ -125,13 +133,12 @@
             <view wx:if="{{editForm.expireDate}}" class="picker">{{editForm.expireDate}}</view>
             <view wx:else class="picker picker-placeholder">可直接选择预计到期日期</view>
           </picker>
-          <view class="picker-hint">填了出厂日期和保质期后，会自动计算到期日期</view>
         </view>
+      </view>
 
-        <view class="modal-actions">
-          <view class="modal-btn secondary" bindtap="closeEdit">取消</view>
-          <view class="modal-btn primary" bindtap="saveEdit">保存修改</view>
-        </view>
+      <view class="modal-actions">
+        <view class="modal-btn secondary" bindtap="closeEdit">取消</view>
+        <view class="modal-btn primary" bindtap="saveEdit">保存修改</view>
       </view>
     </view>
   </view>
@@ -142,17 +149,26 @@
       <view class="edit-row">
         <view class="form-item edit-flex">
           <view class="mini-label">低风险阈值</view>
-          <input class="input" type="number" value="{{editWarningRuleDraft.lowRiskDays}}" data-field="lowRiskDays" bindinput="onEditWarningRuleDraftInput" placeholder="低风险" />
+          <view class="input-with-unit">
+            <input class="input rule-input" type="number" value="{{editWarningRuleDraft.lowRiskDays}}" data-field="lowRiskDays" bindinput="onEditWarningRuleDraftInput" placeholder="低风险" />
+            <view class="input-unit">天</view>
+          </view>
         </view>
         <view class="edit-gap"></view>
         <view class="form-item edit-flex">
           <view class="mini-label">中风险阈值</view>
-          <input class="input" type="number" value="{{editWarningRuleDraft.mediumRiskDays}}" data-field="mediumRiskDays" bindinput="onEditWarningRuleDraftInput" placeholder="中风险" />
+          <view class="input-with-unit">
+            <input class="input rule-input" type="number" value="{{editWarningRuleDraft.mediumRiskDays}}" data-field="mediumRiskDays" bindinput="onEditWarningRuleDraftInput" placeholder="中风险" />
+            <view class="input-unit">天</view>
+          </view>
         </view>
         <view class="edit-gap"></view>
         <view class="form-item edit-flex">
           <view class="mini-label">高风险阈值</view>
-          <input class="input" type="number" value="{{editWarningRuleDraft.highRiskDays}}" data-field="highRiskDays" bindinput="onEditWarningRuleDraftInput" placeholder="高风险" />
+          <view class="input-with-unit">
+            <input class="input rule-input" type="number" value="{{editWarningRuleDraft.highRiskDays}}" data-field="highRiskDays" bindinput="onEditWarningRuleDraftInput" placeholder="高风险" />
+            <view class="input-unit">天</view>
+          </view>
         </view>
       </view>
       <view class="rule-modal-actions">
