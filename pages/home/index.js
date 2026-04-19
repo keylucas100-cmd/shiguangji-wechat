@@ -2,7 +2,10 @@ const store = require('../../utils/store')
 const speaker = require('../../utils/speaker')
 const theme = require('../../utils/theme')
 const { getInventoryImage } = require('../../utils/inventoryImage')
+
 const dismissedPurchaseKey = 'sgj_purchase_dismissed'
+const homePreviewCount = 3
+const oneDayMs = 24 * 60 * 60 * 1000
 
 function inferCategoryByName(name) {
   const text = String(name || '')
@@ -15,8 +18,12 @@ function inferCategoryByName(name) {
   return '其他'
 }
 
+function resolveCategory(item) {
+  return item.category || inferCategoryByName(item.name)
+}
+
 function getHomeSuggestionReason(item) {
-  if (item.urgency === 'urgent') return '已用完，建议购买'
+  if (item.urgency === 'urgent') return '已用完，建议尽快购买'
   if (item.quantityText && item.quantityText !== '0') return `仅剩 ${item.quantityText}，建议补充`
   return '常用食材，库存已不足'
 }
@@ -30,13 +37,13 @@ function readDismissedSuggestions() {
 }
 
 function decoratePurchaseSuggestion(item) {
-  const category = item.category || inferCategoryByName(item.name)
+  const category = resolveCategory(item)
   return {
     ...item,
     category,
     image: getInventoryImage(item.name, category),
     itemClass: item.urgency === 'urgent' ? 'purchase-urgent' : 'purchase-low',
-    priorityText: item.urgency === 'urgent' ? '高优先' : '',
+    priorityText: item.urgency === 'urgent' ? '优先采购' : '',
     homeReason: getHomeSuggestionReason(item)
   }
 }
@@ -49,8 +56,8 @@ function getHomeSuggestionData() {
 
   return {
     purchaseCount: suggestions.length,
-    purchaseSuggestions: suggestions.slice(0, 3),
-    hasMorePurchaseSuggestions: suggestions.length > 3
+    purchaseSuggestions: suggestions.slice(0, homePreviewCount),
+    hasMorePurchaseSuggestions: suggestions.length > homePreviewCount
   }
 }
 
@@ -60,14 +67,26 @@ function getExpireTime(item) {
   return Number.isNaN(time) ? Number.MAX_SAFE_INTEGER : time
 }
 
-function sortByExpireDate(a, b) {
-  const timeDiff = getExpireTime(a) - getExpireTime(b)
-  if (timeDiff !== 0) return timeDiff
+function getReminderPriority(status) {
+  if (status === 'expired') return 0
+  if (status === 'high_risk') return 1
+  if (status === 'medium_risk') return 2
+  if (status === 'low_risk') return 3
+  return 4
+}
+
+function sortReminderItems(a, b) {
+  const priorityDiff = getReminderPriority(a.status) - getReminderPriority(b.status)
+  if (priorityDiff !== 0) return priorityDiff
+
+  const expireTimeDiff = getExpireTime(a) - getExpireTime(b)
+  if (expireTimeDiff !== 0) return expireTimeDiff
+
   return String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || ''))
 }
 
 function getReminderStyle(status) {
-  if (status === 'high_risk') {
+  if (status === 'expired' || status === 'high_risk') {
     return { badgeClass: 'badge-danger', itemClass: 'item-danger' }
   }
   if (status === 'medium_risk') {
@@ -78,19 +97,94 @@ function getReminderStyle(status) {
 
 function getDaysToExpire(expireDate) {
   if (!expireDate) return Number.MAX_SAFE_INTEGER
+
   const today = new Date()
-  const expire = new Date(`${expireDate}T23:59:59`)
-  const diff = Math.ceil((expire - today) / (1000 * 60 * 60 * 24))
-  return Number.isFinite(diff) ? diff : Number.MAX_SAFE_INTEGER
+  today.setHours(0, 0, 0, 0)
+
+  const expire = new Date(`${expireDate}T00:00:00`)
+  if (Number.isNaN(expire.getTime())) return Number.MAX_SAFE_INTEGER
+
+  return Math.round((expire.getTime() - today.getTime()) / oneDayMs)
+}
+
+function getReminderDayText(days, status) {
+  if (days === Number.MAX_SAFE_INTEGER) return '请补充到期日期，方便系统提醒'
+  if (status === 'expired' || days < 0) return `已过期${Math.abs(days)}天`
+  if (days === 0) return '今日到期'
+  if (days === 1) return '明日到期'
+  return `${days}天后到期`
+}
+
+function decorateReminderItem(item) {
+  const category = resolveCategory(item)
+  const days = getDaysToExpire(item.expireDate)
+  const reminderStyle = getReminderStyle(item.status)
+  const noticeText = getReminderDayText(days, item.status)
+
+  return {
+    ...item,
+    category,
+    image: getInventoryImage(item.name, category),
+    daysText: noticeText,
+    noticeText,
+    badgeClass: reminderStyle.badgeClass,
+    itemClass: reminderStyle.itemClass
+  }
+}
+
+function decorateDefaultReminderItem(item) {
+  const category = resolveCategory(item)
+  const reminderStyle = getReminderStyle(item.status)
+  const days = getDaysToExpire(item.expireDate)
+
+  return {
+    ...item,
+    category,
+    image: getInventoryImage(item.name, category),
+    daysText: days === Number.MAX_SAFE_INTEGER ? '到期时间待补充' : `${Math.max(days, 0)}天后到期`,
+    badgeClass: reminderStyle.badgeClass,
+    itemClass: reminderStyle.itemClass
+  }
+}
+
+function getReminderSubtitle(reminders) {
+  const expiredCount = reminders.expired.length
+  const expiringCount = reminders.expiring.length
+
+  if (expiredCount && expiringCount) {
+    return `有 ${expiredCount} 样已过期，${expiringCount} 样即将到期，请优先查看`
+  }
+  if (expiredCount) return `有 ${expiredCount} 样食材已过期，请尽快处理`
+  if (expiringCount) return `有 ${expiringCount} 样食材即将到期，请及时安排`
+  return '目前没有临期或过期食材，继续保持'
+}
+
+function getDefaultReminderSubtitle(reminders) {
+  const expiringCount = reminders.expiring.length
+  if (expiringCount) return `有 ${expiringCount} 样食品临期了，请赶快处理`
+  return '目前没有食品临期，继续保持'
+}
+
+function getPurchaseSubtitle(purchaseCount) {
+  if (!purchaseCount) return '常用食材库存充足，暂时不用采购'
+  return `有 ${purchaseCount} 样常用食材建议补货`
 }
 
 function buildHomeVoiceMessages(reminders, purchaseData) {
   const messages = []
+  const expiredCount = reminders.expired.length
+  const expiringCount = reminders.expiring.length
 
-  if (reminders.expiring.length) {
+  if (expiredCount) {
     messages.push({
-      text: `你有${reminders.expiring.length}样食品临期了，请赶快处理~`,
-      key: `home-expiring-${reminders.expiring.length}`,
+      text: `你有${expiredCount}样食材已过期，${expiringCount}样即将到期，请尽快处理`,
+      key: `home-reminder-${expiredCount}-${expiringCount}`,
+      minInterval: 30000
+    })
+  } else if (expiringCount) {
+    messages.push({
+      text: `你有${expiringCount}样食品临期了，请赶快处理`,
+      key: `home-expiring-${expiringCount}`,
       minInterval: 30000
     })
   }
@@ -110,10 +204,15 @@ Page({
   data: {
     themeKey: 'green',
     themeColor: '#2fb66d',
+    elderlyMode: false,
     summary: { expiringCount: 0, expiredCount: 0, totalCount: 0 },
+    reminderSubtitle: '',
+    purchaseSubtitle: '',
     purchaseCount: 0,
     purchaseSuggestions: [],
     hasMorePurchaseSuggestions: false,
+    hasMoreReminders: false,
+    reminderList: [],
     hasMoreExpiringReminders: false,
     expiringList: []
   },
@@ -124,35 +223,35 @@ Page({
     store.syncInventoryFromServer()
       .catch(() => null)
       .finally(() => {
-    const settings = store.getSettings()
-    const inventory = store.getInventory()
-    const reminders = store.getReminderSummary()
-    const expiringReminders = reminders.expiring.slice().sort(sortByExpireDate)
-    const purchaseData = getHomeSuggestionData()
-    this.setData({
-      ...theme.getThemeData(settings),
-      summary: {
-        expiringCount: reminders.expiring.length,
-        expiredCount: reminders.expired.length,
-        totalCount: inventory.length
-      },
-      purchaseCount: purchaseData.purchaseCount,
-      purchaseSuggestions: purchaseData.purchaseSuggestions,
-      hasMorePurchaseSuggestions: purchaseData.hasMorePurchaseSuggestions,
-      hasMoreExpiringReminders: expiringReminders.length > 3,
-      expiringList: expiringReminders.slice(0, 3).map(item => {
-        const reminderStyle = getReminderStyle(item.status)
-        const badgeClass = reminderStyle.badgeClass
-        const itemClass = reminderStyle.itemClass
-        const days = getDaysToExpire(item.expireDate)
+        const settings = store.getSettings()
+        const elderlyMode = !!settings.elderlyMode
+        const inventory = store.getInventory()
+        const reminders = store.getReminderSummary()
+        const purchaseData = getHomeSuggestionData()
+        const reminderItems = (elderlyMode
+          ? [...reminders.expired, ...reminders.expiring]
+          : reminders.expiring.slice())
+          .slice()
+          .sort(sortReminderItems)
+        const defaultExpiringList = reminders.expiring.slice().sort(sortReminderItems)
 
-        return {
-          ...item,
-          daysText: days === Number.MAX_SAFE_INTEGER ? '到期时间待补充' : `${Math.max(days, 0)}天后到期`,
-          badgeClass,
-          itemClass
-        }
-      })
+        this.setData({
+          ...theme.getThemeData(settings),
+          elderlyMode,
+          summary: {
+            expiringCount: reminders.expiring.length,
+            expiredCount: reminders.expired.length,
+            totalCount: inventory.length
+          },
+          reminderSubtitle: elderlyMode ? getReminderSubtitle(reminders) : getDefaultReminderSubtitle(reminders),
+          purchaseSubtitle: getPurchaseSubtitle(purchaseData.purchaseCount),
+          purchaseCount: purchaseData.purchaseCount,
+          purchaseSuggestions: purchaseData.purchaseSuggestions,
+          hasMorePurchaseSuggestions: purchaseData.hasMorePurchaseSuggestions,
+          hasMoreReminders: reminderItems.length > homePreviewCount,
+          reminderList: reminderItems.slice(0, homePreviewCount).map(decorateReminderItem),
+          hasMoreExpiringReminders: defaultExpiringList.length > homePreviewCount,
+          expiringList: defaultExpiringList.slice(0, homePreviewCount).map(decorateDefaultReminderItem)
         }, () => {
           speaker.speakBatch(buildHomeVoiceMessages(reminders, purchaseData)).catch(() => false)
         })

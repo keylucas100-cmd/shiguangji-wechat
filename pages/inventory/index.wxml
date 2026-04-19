@@ -1,4 +1,4 @@
-<view class="container theme-{{themeKey}}">
+<view class="container theme-{{themeKey}} {{elderlyMode ? 'elderly-mode' : ''}}">
   <view class="card">
     <view class="filter-row">
       <block wx:for="{{filterOptions}}" wx:key="key" wx:for-item="filterItem">

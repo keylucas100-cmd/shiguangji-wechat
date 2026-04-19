@@ -695,3 +695,62 @@
   color: #ffffff;
   box-shadow: 0 10rpx 24rpx var(--theme-shadow, rgba(47, 182, 109, 0.26));
 }
+
+.elderly-mode {
+  padding: 20rpx 18rpx 28rpx;
+}
+
+.elderly-mode .card {
+  padding: 26rpx 22rpx;
+  border-radius: 28rpx;
+}
+
+.elderly-mode .filter-row {
+  gap: 18rpx;
+}
+
+.elderly-mode .filter-tag {
+  padding: 16rpx 28rpx;
+  font-size: 30rpx;
+  font-weight: 700;
+  border-radius: 999rpx;
+}
+
+.elderly-mode .inventory-swipe {
+  margin-bottom: 18rpx;
+  border-radius: 26rpx;
+}
+
+.elderly-mode .inventory-delete-action {
+  width: 144rpx;
+  font-size: 30rpx;
+  border-radius: 0 26rpx 26rpx 0;
+}
+
+.elderly-mode .list-item {
+  min-height: 168rpx;
+  padding: 34rpx 28rpx 38rpx;
+  border-radius: 26rpx;
+}
+
+.elderly-mode .list-item.is-open {
+  transform: translateX(-144rpx);
+}
+
+.elderly-mode .title {
+  font-size: 42rpx;
+}
+
+.elderly-mode .quantity {
+  width: 110rpx;
+  font-size: 32rpx;
+}
+
+.elderly-mode .tag {
+  width: 132rpx;
+  font-size: 30rpx;
+}
+
+.elderly-mode .expire-line {
+  font-size: 32rpx;
+}

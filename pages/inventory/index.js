@@ -159,6 +159,7 @@ Page({
     units: ['克', '斤', '盒', '袋', '瓶'],
     themeKey: 'green',
     themeColor: '#2fb66d',
+    elderlyMode: false,
     today: getToday(),
     editVisible: false,
     animatingItemId: '',
@@ -172,8 +173,10 @@ Page({
   },
   onShow() {
     const today = getToday()
+    const settings = store.getSettings()
     this.setData({
-      ...theme.getThemeData(store.getSettings()),
+      ...theme.getThemeData(settings),
+      elderlyMode: !!settings.elderlyMode,
       today
     })
     this.loadList()

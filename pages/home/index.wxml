@@ -1,5 +1,5 @@
-<view class="container theme-{{themeKey}}">
-  <view class="card">
+<view class="container theme-{{themeKey}} {{elderlyMode ? 'elderly-mode' : ''}}">
+  <view wx:if="{{!elderlyMode}}" class="card">
     <view class="section-title-row">
       <view class="section-title-wrap">
         <view class="section-title no-margin">今日总览</view>
@@ -10,73 +10,126 @@
       <view class="stat-item expiring">
         <view class="stat-value-row">
           <image class="stat-icon" src="/assets/home/warning.png" mode="aspectFit"></image>
-        <view class="stat-value">{{summary.expiringCount}}</view>
-      </view>
-        <view class="muted">临期食材</view>
+          <view class="stat-value">{{summary.expiringCount}}</view>
+        </view>
+        <view class="muted">{{elderlyMode ? '即将到期' : '临期食材'}}</view>
       </view>
       <view class="stat-item expired">
         <view class="stat-value-row">
           <image class="stat-icon" src="/assets/home/deadline.png" mode="aspectFit"></image>
           <view class="stat-value">{{summary.expiredCount}}</view>
         </view>
-        <view class="muted">过期食材</view>
+        <view class="muted">{{elderlyMode ? '已过期' : '过期食材'}}</view>
       </view>
       <view class="stat-item total">
         <view class="stat-value-row">
           <image class="stat-icon" src="/assets/home/total.png" mode="aspectFit"></image>
           <view class="stat-value">{{summary.totalCount}}</view>
         </view>
-        <view class="muted">库存总数</view>
+        <view class="muted">{{elderlyMode ? '总计库存' : '库存总数'}}</view>
       </view>
     </view>
   </view>
 
-  <view class="card">
-  <view class="reminder-header">
-    <view class="section-title-wrap">
-      <view class="section-title no-margin">临期提醒</view>
-      <image class="section-title-icon" src="/assets/home/notification.png" mode="aspectFit"></image>
+  <view wx:if="{{elderlyMode}}" class="card reminder-card">
+    <view class="section-head">
+      <view class="section-title-wrap">
+        <view class="section-title no-margin">过期提醒</view>
+        <image class="section-title-icon" src="/assets/home/notification.png" mode="aspectFit"></image>
+      </view>
+      <view class="section-action" bindtap="goInventory">查看全部</view>
     </view>
-    <view class="reminder-more" bindtap="goInventory">查看全部 ></view>
-  </view>
-  <view class="reminder-subtitle" wx:if="{{summary.expiringCount}}">有 {{summary.expiringCount}} 样食品临期了，请赶快处理~</view>
-  <view class="reminder-subtitle" wx:else>目前没有食品临期，继续保持~</view>
 
-  <block wx:if="{{expiringList.length}}">
-    <block wx:for="{{expiringList}}" wx:key="id">
-      <view class="reminder-item {{item.itemClass}}">
-  <view class="reminder-left">
-    <view class="food-name">{{item.name}}</view>
-    <view class="food-date">到期日：{{item.expireDate}}</view>
-  </view>
+    <view class="reminder-subtitle">{{reminderSubtitle}}</view>
 
-  <view class="reminder-right">
-    <view class="day-badge {{item.badgeClass}}">{{item.daysText}}</view>
-  </view>
-</view>
+    <block wx:if="{{reminderList.length}}">
+      <block wx:for="{{reminderList}}" wx:key="id">
+        <view class="elderly-reminder-item {{item.itemClass}}">
+          <image class="elderly-reminder-image" src="{{item.image}}" mode="aspectFill"></image>
+          <view class="elderly-reminder-content">
+            <view class="elderly-food-name">{{item.name}}</view>
+          </view>
+          <view class="elderly-reminder-right">
+            <view class="elderly-day-tag {{item.badgeClass}}">{{item.daysText}}</view>
+          </view>
+        </view>
+      </block>
+
+      <view wx:if="{{hasMoreReminders}}" class="more-ellipsis">
+        <text class="ellipsis-dot">·</text>
+        <text class="ellipsis-dot">·</text>
+        <text class="ellipsis-dot">·</text>
+      </view>
     </block>
-    <view wx:if="{{hasMoreExpiringReminders}}" class="more-ellipsis">
-      <text class="ellipsis-dot">·</text>
-      <text class="ellipsis-dot">·</text>
-      <text class="ellipsis-dot">·</text>
-    </view>
-  </block>
 
-  <view wx:else class="empty-block ">
-    <view class="text">
-      <view class="great "> 🎉太棒了</view>
-      <view class="detail"> 目前没有即将过期的食材</view>
+    <view wx:else class="empty-block">
+      <view class="text">
+        <view class="great">目前很安心</view>
+        <view class="detail">没有临期或过期食材，先放心使用现有库存</view>
+      </view>
+      <image
+        class="empty-image"
+        src="/assets/home/produce_cutout_clear.png"
+        mode="aspectFit"
+      />
     </view>
-    <image 
-      class="empty-image"
-      src="/assets/home/produce_cutout_clear.png"
-      mode="aspectFit"
-    />
   </view>
-</view>
+
+  <view wx:else class="card">
+    <view class="reminder-header">
+      <view class="section-title-wrap">
+        <view class="section-title no-margin">临期提醒</view>
+        <image class="section-title-icon" src="/assets/home/notification.png" mode="aspectFit"></image>
+      </view>
+      <view class="reminder-more" bindtap="goInventory">查看全部 ></view>
+    </view>
+    <view class="reminder-subtitle" wx:if="{{summary.expiringCount}}">有 {{summary.expiringCount}} 样食品临期了，请赶快处理~</view>
+    <view class="reminder-subtitle" wx:else>目前没有食品临期，继续保持~</view>
+
+    <block wx:if="{{expiringList.length}}">
+      <block wx:for="{{expiringList}}" wx:key="id">
+        <view class="reminder-item {{item.itemClass}}">
+          <image class="default-reminder-image" src="{{item.image}}" mode="aspectFill"></image>
+          <view class="reminder-left">
+            <view class="food-name">{{item.name}}</view>
+            <view class="food-date">到期日：{{item.expireDate}}</view>
+          </view>
+
+          <view class="reminder-right">
+            <view class="day-badge {{item.badgeClass}}">{{item.daysText}}</view>
+          </view>
+        </view>
+      </block>
+      <view wx:if="{{hasMoreExpiringReminders}}" class="more-ellipsis">
+        <text class="ellipsis-dot">·</text>
+        <text class="ellipsis-dot">·</text>
+        <text class="ellipsis-dot">·</text>
+      </view>
+    </block>
+
+    <view wx:else class="empty-block">
+      <view class="text">
+        <view class="great"> 🎉太棒了</view>
+        <view class="detail"> 目前没有即将过期的食材</view>
+      </view>
+      <image
+        class="empty-image"
+        src="/assets/home/produce_cutout_clear.png"
+        mode="aspectFit"
+      />
+    </view>
+  </view>
 
   <view class="card purchase-card">
-    <view class="section-title-row">
+    <view wx:if="{{elderlyMode}}" class="section-head">
+      <view class="section-title-wrap">
+        <view class="section-title no-margin">采购建议</view>
+        <image class="section-title-icon" src="/assets/home/cart.png" mode="aspectFit"></image>
+      </view>
+      <view class="section-action" bindtap="goPurchase">查看全部</view>
+    </view>
+
+    <view wx:else class="section-title-row">
       <view class="section-title-wrap">
         <view class="section-title no-margin">采购建议</view>
         <image class="section-title-icon" src="/assets/home/cart.png" mode="aspectFit"></image>
@@ -85,7 +138,8 @@
     </view>
 
     <block wx:if="{{purchaseSuggestions.length}}">
-      <view class="purchase-subtitle">有 {{purchaseCount}} 样食材快没了，建议及时采购</view>
+      <view wx:if="{{elderlyMode}}" class="purchase-subtitle">{{purchaseSubtitle}}</view>
+      <view wx:else class="purchase-subtitle">有 {{purchaseCount}} 样食材快没了，建议及时采购</view>
 
       <block wx:for="{{purchaseSuggestions}}" wx:key="dismissKey">
         <view class="purchase-item {{item.itemClass}}">
@@ -93,7 +147,7 @@
           <view class="purchase-info">
             <view class="purchase-name-row">
               <view class="purchase-name">{{item.name}}</view>
-              <view wx:if="{{item.priorityText}}" class="priority-badge">🔥 {{item.priorityText}}</view>
+              <view wx:if="{{item.priorityText}}" class="priority-badge">{{elderlyMode ? item.priorityText : '🔥 ' + item.priorityText}}</view>
             </view>
             <view class="purchase-reason">{{item.homeReason}}</view>
           </view>

@@ -526,6 +526,7 @@ Page({
     today: formatToday(),
     themeKey: "green",
     themeColor: "#2fb66d",
+    elderlyMode: false,
     voicePanelVisible: false,
     voiceStatus: "idle",
     voiceStatusText: VOICE_STATUS_TEXT.idle,
@@ -563,8 +564,10 @@ Page({
 
   onShow() {
     const today = formatToday();
+    const settings = store.getSettings();
     this.setData({
-      ...theme.getThemeData(store.getSettings()),
+      ...theme.getThemeData(settings),
+      elderlyMode: !!settings.elderlyMode,
       today,
     });
   },
@@ -831,11 +834,39 @@ Page({
     });
   },
 
+  onCategorySelect(e) {
+    const category = e.currentTarget.dataset.category;
+    if (!category) return;
+
+    const idx = this.data.categories.findIndex((item) => item === category);
+    this.setData({
+      categoryIndex: idx > -1 ? idx : 0,
+      "form.category": category,
+      ...buildWarningRuleUpdates("form", category),
+    });
+  },
+
   onUnitChange(e) {
     const idx = Number(e.detail.value);
     this.setData({
       unitIndex: idx,
       "form.unit": this.data.units[idx],
+    });
+  },
+
+  decreaseQuantity() {
+    const current = Number(this.data.form.quantity || 1);
+    const next = current > 1 ? current - 1 : 1;
+    this.setData({
+      "form.quantity": String(next),
+    });
+  },
+
+  increaseQuantity() {
+    const current = Number(this.data.form.quantity || 1);
+    const next = current > 0 ? current + 1 : 1;
+    this.setData({
+      "form.quantity": String(next),
     });
   },
 
@@ -1138,6 +1169,7 @@ Page({
 
   save() {
     const form = this.data.form;
+    const quantityValue = Number(form.quantity || 1);
 
     if (!form.name) {
       wx.showToast({ title: "食材名称不能为空", icon: "none" });
@@ -1149,7 +1181,7 @@ Page({
       return;
     }
 
-    if (!form.quantity || Number(form.quantity) <= 0) {
+    if (!Number.isFinite(quantityValue) || quantityValue <= 0) {
       wx.showToast({ title: "请输入正确数量", icon: "none" });
       return;
     }
@@ -1206,8 +1238,8 @@ Page({
         mediumRiskDays: Number(form.mediumRiskDays),
         highRiskDays: Number(form.highRiskDays),
         expireDate,
-        quantity: Number(form.quantity),
-        remainingQuantity: Number(form.quantity),
+        quantity: quantityValue,
+        remainingQuantity: quantityValue,
       })
       .then(() => {
         const expireSpeakText = describeDate(expireDate);

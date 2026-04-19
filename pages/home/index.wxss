@@ -322,6 +322,14 @@
   margin-bottom: 0;
 }
 
+.default-reminder-image {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 18rpx;
+  flex: none;
+  background: var(--theme-field, #f5fbf4);
+}
+
 .reminder-left {
   flex: 1;
   min-width: 0;
@@ -422,4 +430,144 @@
   bottom: 0;
   width: 300rpx;
   height: 140rpx;
+}
+
+.elderly-mode .summary-card {
+  background: rgba(255, 255, 255, 0.97);
+}
+
+.elderly-mode .stat-item {
+  border-radius: 26rpx;
+  padding: 24rpx 12rpx;
+  box-shadow: 0 10rpx 24rpx rgba(31, 41, 55, 0.06);
+}
+
+.elderly-mode .expiring {
+  background: #fff1d6 !important;
+}
+
+.elderly-mode .expired {
+  background: #ffe7e1 !important;
+}
+
+.elderly-mode .total {
+  background: #e6f6e8 !important;
+}
+
+.elderly-mode .section-title {
+  font-size: 42rpx;
+}
+
+.elderly-mode .section-title-icon {
+  width: 50rpx;
+  height: 50rpx;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14rpx;
+  min-width: 0;
+  margin-bottom: 18rpx;
+}
+
+.section-action {
+  flex: none;
+  min-width: 172rpx;
+  padding: 16rpx 24rpx;
+  border-radius: 999rpx;
+  background: var(--theme-field, #f5fbf4);
+  border: 2rpx solid var(--theme-border, #dfeee1);
+  color: var(--theme-title, #173d23);
+  font-size: 30rpx;
+  font-weight: 700;
+  text-align: center;
+}
+
+.elderly-mode .reminder-subtitle,
+.elderly-mode .purchase-subtitle {
+  font-size: 32rpx;
+  margin-bottom: 22rpx;
+}
+
+.elderly-reminder-item {
+  display: flex;
+  align-items: center;
+  gap: 22rpx;
+  min-height: 180rpx;
+  padding: 22rpx;
+  border-radius: 28rpx;
+  box-shadow: 0 10rpx 26rpx rgba(31, 41, 55, 0.08);
+}
+
+.elderly-reminder-item + .elderly-reminder-item {
+  margin-top: 18rpx;
+}
+
+.elderly-reminder-image {
+  width: 132rpx;
+  height: 132rpx;
+  border-radius: 26rpx;
+  flex: none;
+  background: var(--theme-field, #f5fbf4);
+}
+
+.elderly-reminder-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  padding-left: 10rpx;
+}
+
+.elderly-food-name {
+  font-size: 42rpx;
+  font-weight: 700;
+  color: var(--theme-title, #173d23);
+  line-height: 1.3;
+}
+
+.elderly-reminder-right {
+  flex: none;
+}
+
+.elderly-day-tag {
+  min-width: 146rpx;
+  padding: 18rpx 20rpx;
+  border-radius: 22rpx;
+  font-size: 32rpx;
+  font-weight: 700;
+  text-align: center;
+  box-sizing: border-box;
+  line-height: 1.35;
+}
+
+.elderly-mode .purchase-item {
+  gap: 22rpx;
+  min-height: 180rpx;
+  padding: 22rpx 20rpx 22rpx 34rpx;
+  border-radius: 24rpx;
+}
+
+.elderly-mode .purchase-image {
+  width: 132rpx;
+  height: 132rpx;
+  border-radius: 22rpx;
+}
+
+.elderly-mode .purchase-name {
+  font-size: 38rpx;
+}
+
+.elderly-mode .purchase-reason,
+.elderly-mode .priority-badge,
+.elderly-mode .purchase-empty-subtitle,
+.elderly-mode .detail {
+  font-size: 28rpx;
+}
+
+.elderly-mode .purchase-empty-title,
+.elderly-mode .great {
+  font-size: 38rpx;
 }

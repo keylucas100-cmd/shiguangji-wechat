@@ -1,25 +1,76 @@
-<view class="container theme-{{themeKey}}">
-  <view class="recipe-toolbar">
-    <view class="recipe-search">
+<view class="container theme-{{themeKey}} {{elderlyMode ? 'elderly-mode' : ''}}">
+  <view class="recipe-toolbar {{elderlyMode ? 'elderly-toolbar' : ''}}">
+    <view class="recipe-search {{elderlyMode ? 'elderly-search' : ''}}">
       <text class="search-icon">⌕</text>
       <input
-        class="search-input"
+        class="search-input {{elderlyMode ? 'elderly-search-input' : ''}}"
         value="{{searchText}}"
-        placeholder="搜索食材或菜名"
+        placeholder="{{elderlyMode ? '搜索食材或菜谱…' : '搜索食材或菜名'}}"
         placeholder-class="search-placeholder"
         bindinput="onSearchInput"
       />
       <text wx:if="{{searchText}}" class="search-clear" bindtap="clearSearch">×</text>
     </view>
-    <view class="sort-chip" bindtap="showSortSheet">
+    <view class="sort-chip {{elderlyMode ? 'elderly-sort-chip' : ''}}" bindtap="showSortSheet">
       <text class="sort-text">{{sortText}}</text>
       <text class="sort-arrow">⌄</text>
     </view>
   </view>
 
+  <view wx:if="{{elderlyMode}}" class="elderly-section-head">
+ 
+  </view>
+
   <block wx:if="{{list.length}}">
     <block wx:for="{{list}}" wx:key="id">
       <view
+        wx:if="{{elderlyMode}}"
+        class="elderly-recipe-card"
+        bindtap="showRecipeDetail"
+        data-id="{{item.id}}"
+        hover-class="recipe-card-pressed"
+        hover-stay-time="90"
+      >
+        <view class="elderly-card-top">
+          <image class="elderly-recipe-cover" src="{{item.cover}}" mode="aspectFill" />
+
+          <view class="elderly-recipe-main">
+            <view class="elderly-title-score-row">
+              <view class="elderly-recipe-title">{{item.name}}</view>
+              <view class="elderly-score-ring" style="{{item.scoreRingStyle}}">
+                <view class="elderly-score-inner">
+                  <view class="elderly-score-value">{{item.matchRate}}%</view>
+                </view>
+              </view>
+            </view>
+
+            <view class="elderly-meta-row">
+              <view class="elderly-meta-pill {{item.supplyClassName}}">{{item.supplyText}}</view>
+              <view class="elderly-time-pill">{{item.cookTime}}分钟</view>
+            </view>
+          </view>
+        </view>
+
+        <view class="elderly-ingredient-panel">
+          <view class="elderly-ingredient-line elderly-ingredient-have">
+            <view class="elderly-ingredient-label">已有食材：</view>
+            <view class="elderly-ingredient-text">{{item.matchedText}}</view>
+          </view>
+
+          <view class="elderly-ingredient-line elderly-ingredient-missing">
+            <view class="elderly-ingredient-label">缺少食材：</view>
+            <view class="elderly-ingredient-text">{{item.missingText}}</view>
+          </view>
+        </view>
+
+        <view class="elderly-cook-btn" catchtap="showRecipeDetail" data-id="{{item.id}}">
+          <text class="elderly-cook-icon">▶</text>
+          <text>去制作</text>
+        </view>
+      </view>
+
+      <view
+        wx:else
         class="recipe-card"
         bindtap="showRecipeDetail"
         data-id="{{item.id}}"
@@ -64,7 +115,7 @@
       </view>
     </block>
   </block>
-  <view wx:else class="empty">暂无可推荐菜谱</view>
+  <view wx:else class="empty">{{elderlyMode ? '暂时没有合适的推荐菜谱' : '暂无可推荐菜谱'}}</view>
 
   <view wx:if="{{detailVisible}}" class="recipe-mask" catchtap="closeRecipeDetail">
     <view class="recipe-panel" catchtap="noop">

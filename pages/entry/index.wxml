@@ -1,5 +1,92 @@
-<view class="container theme-{{themeKey}}">
-  <view class="card">
+<view class="container theme-{{themeKey}} {{elderlyMode ? 'elderly-mode' : ''}}">
+  <view wx:if="{{elderlyMode}}" class="card elderly-entry-card">
+    <view class="elderly-entry-body">
+      <view class="elderly-entry-title">添加食材</view>
+
+      <view class="elderly-form-item">
+        <view class="elderly-label">食材名称</view>
+        <view class="elderly-name-row">
+          <view class="elderly-field-control elderly-name-control {{form.name ? 'has-clear' : ''}}">
+            <input
+              class="elderly-input"
+              placeholder="例如：鲜牛奶"
+              placeholder-class="placeholder"
+              value="{{form.name}}"
+              data-field="name"
+              bindinput="onInput"
+            />
+            <view wx:if="{{form.name}}" class="clear-btn elderly-clear-btn" data-field="name" bindtap="clearField">清空</view>
+          </view>
+          <view class="elderly-voice-btn" bindtap="startVoiceInput">
+            <image class="voice-icon" src="/assets/entry/mic.png" mode="aspectFit" />
+          </view>
+        </view>
+      </view>
+
+      <view class="elderly-form-item">
+        <view class="elderly-label">所属分类</view>
+        <view class="elderly-category-grid">
+          <view
+            wx:for="{{categories}}"
+            wx:key="*this"
+            class="elderly-category-chip {{form.category === item ? 'active' : ''}}"
+            data-category="{{item}}"
+            bindtap="onCategorySelect"
+          >
+            {{item}}
+          </view>
+        </view>
+      </view>
+
+      <view class="elderly-row">
+        <view class="elderly-form-item elderly-col">
+          <view class="elderly-label">数量</view>
+          <view class="elderly-stepper">
+            <view class="elderly-stepper-btn" bindtap="decreaseQuantity">-</view>
+            <input
+              class="elderly-stepper-input"
+              type="digit"
+              value="{{form.quantity || '1'}}"
+              data-field="quantity"
+              bindinput="onInput"
+            />
+            <view class="elderly-stepper-btn plus" bindtap="increaseQuantity">+</view>
+          </view>
+        </view>
+
+        <view class="elderly-gap"></view>
+
+        <view class="elderly-form-item elderly-col">
+          <view class="elderly-label">单位</view>
+          <view class="elderly-field-control elderly-picker-control {{form.unit ? 'has-clear' : ''}}">
+            <picker range="{{units}}" value="{{unitIndex}}" bindchange="onUnitChange">
+              <view wx:if="{{form.unit}}" class="elderly-picker">{{form.unit}}</view>
+              <view wx:else class="elderly-picker picker-placeholder">请选择</view>
+            </picker>
+            <view wx:if="{{form.unit}}" class="clear-btn elderly-clear-btn" data-field="unit" bindtap="clearField">清空</view>
+          </view>
+        </view>
+      </view>
+
+      <view class="elderly-form-item">
+        <view class="elderly-label">保质期至</view>
+        <view class="elderly-field-control elderly-date-control {{form.expireDate ? 'has-clear' : ''}}">
+          <picker mode="date" value="{{form.expireDate}}" bindchange="onExpireDateChange">
+            <view wx:if="{{form.expireDate}}" class="elderly-picker">{{form.expireDate}}</view>
+            <view wx:else class="elderly-picker picker-placeholder">请选择到期日期</view>
+          </picker>
+          <view wx:if="{{form.expireDate}}" class="clear-btn elderly-clear-btn" data-field="expireDate" bindtap="clearField">清空</view>
+        </view>
+      </view>
+
+      <view class="elderly-form-actions">
+        <button class="elderly-clear-btn-row" bindtap="clearForm">清空食材</button>
+        <button class="elderly-save-btn" bindtap="save">保存食材</button>
+      </view>
+    </view>
+  </view>
+
+  <view wx:else class="card">
     <view class="entry-header">
       <view class="entry-title">今天买了什么，顺手记一下~</view>
     </view>

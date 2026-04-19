@@ -27,20 +27,35 @@ function getScoreRingStyle(matchRate) {
   return `background: conic-gradient(from 0deg, var(--theme-primary, #2fb66d) 0deg, var(--theme-primary, #2fb66d) ${angle}deg, #e5ece8 ${angle}deg, #e5ece8 360deg);`
 }
 
+function getRecipeSupplyMeta(item) {
+  const missingCount = Array.isArray(item.missing) ? item.missing.length : 0
+  if (missingCount === 0) {
+    return { text: '完美匹配', className: 'supply-full' }
+  }
+  if (missingCount <= 2) {
+    return { text: `缺少${missingCount}样食材`, className: 'supply-partial' }
+  }
+  return { text: `还差${missingCount}样`, className: 'supply-low' }
+}
+
 function decorateRecipe(item) {
   const matchedNames = getNames(item.matched)
   const missingNames = getNames(item.missing)
   const missingSeasoningNames = getNames(item.missingSeasonings)
+  const supplyMeta = getRecipeSupplyMeta(item)
   return {
     ...item,
     matchedText: formatNames(matchedNames, '暂无'),
     missingText: formatNames(missingNames, '无'),
     missingPills: missingNames,
     missingSeasoningText: formatNames(missingSeasoningNames, '无'),
+    missingCount: missingNames.length,
     scoreLevel: getScoreLevel(item.matchRate),
     scoreRingStyle: getScoreRingStyle(item.matchRate),
     stepText: `${item.steps.length}步`,
-    tagText: item.tags && item.tags.length ? item.tags[0] : item.difficulty
+    tagText: item.tags && item.tags.length ? item.tags[0] : item.difficulty,
+    supplyText: supplyMeta.text,
+    supplyClassName: supplyMeta.className
   }
 }
 
@@ -67,6 +82,7 @@ Page({
   data: {
     themeKey: 'green',
     themeColor: '#2fb66d',
+    elderlyMode: false,
     searchText: '',
     sortMode: 'match',
     sortText: '匹配度',
@@ -81,6 +97,7 @@ Page({
     const allRecipes = store.getRecipeRecommendations().map(decorateRecipe)
     this.setData({
       ...themeData,
+      elderlyMode: !!settings.elderlyMode,
       allRecipes
     }, () => {
       this.refreshRecipeList()
