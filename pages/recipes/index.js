@@ -1,7 +1,6 @@
 const store = require('../../utils/store')
 const theme = require('../../utils/theme')
 
-const recipeCategories = ['家常菜', '简餐', '轻食', '汤类', '主食', '早餐']
 const sortOptions = [
   { key: 'match', text: '按匹配度', shortText: '匹配度' },
   { key: 'time', text: '按耗时', shortText: '耗时' },
@@ -28,17 +27,6 @@ function getScoreRingStyle(matchRate) {
   return `background: conic-gradient(from 0deg, var(--theme-primary, #2fb66d) 0deg, var(--theme-primary, #2fb66d) ${angle}deg, #e5ece8 ${angle}deg, #e5ece8 360deg);`
 }
 
-function getCategoryOptions(list) {
-  return [
-    { key: 'all', text: '全部', count: list.length },
-    ...recipeCategories.map(category => ({
-      key: category,
-      text: category,
-      count: list.filter(item => item.category === category).length
-    }))
-  ]
-}
-
 function decorateRecipe(item) {
   const matchedNames = getNames(item.matched)
   const missingNames = getNames(item.missing)
@@ -56,40 +44,52 @@ function decorateRecipe(item) {
   }
 }
 
+function normalizeSearchText(text) {
+  return String(text || '').trim().replace(/\s/g, '').toLowerCase()
+}
+
+function recipeMatchesSearch(recipe, keyword) {
+  if (!keyword) return true
+  const searchText = normalizeSearchText([
+    recipe.name,
+    recipe.category,
+    recipe.difficulty,
+    ...(recipe.tags || []),
+    ...(recipe.ingredients || []).map(item => item.name),
+    ...(recipe.seasonings || []).map(item => item.name),
+    recipe.matchedText,
+    recipe.missingText
+  ].join(' '))
+  return searchText.includes(keyword)
+}
+
 Page({
   data: {
     themeKey: 'green',
     themeColor: '#2fb66d',
-    categoryFilter: 'all',
+    searchText: '',
     sortMode: 'match',
     sortText: '匹配度',
-    categoryOptions: [],
     allRecipes: [],
     list: [],
     detailVisible: false,
     activeRecipe: null
   },
   onShow() {
-    store.syncInventoryFromServer()
-      .catch(() => null)
-      .finally(() => {
-        const settings = store.getSettings()
-        const themeData = theme.getThemeData(settings)
-        const allRecipes = store.getRecipeRecommendations().map(decorateRecipe)
-        this.setData({
-          ...themeData,
-          allRecipes,
-          categoryOptions: getCategoryOptions(allRecipes)
-        }, () => {
-          this.refreshRecipeList()
-        })
-      })
+    const settings = store.getSettings()
+    const themeData = theme.getThemeData(settings)
+    const allRecipes = store.getRecipeRecommendations().map(decorateRecipe)
+    this.setData({
+      ...themeData,
+      allRecipes
+    }, () => {
+      this.refreshRecipeList()
+    })
   },
   refreshRecipeList() {
-    const { allRecipes, categoryFilter, sortMode } = this.data
-    let list = categoryFilter === 'all'
-      ? [...allRecipes]
-      : allRecipes.filter(item => item.category === categoryFilter)
+    const { allRecipes, searchText, sortMode } = this.data
+    const keyword = normalizeSearchText(searchText)
+    let list = allRecipes.filter(item => recipeMatchesSearch(item, keyword))
 
     if (sortMode === 'time') {
       list.sort((a, b) => a.cookTime - b.cookTime || b.score - a.score || a.sortIndex - b.sortIndex)
@@ -104,8 +104,13 @@ Page({
 
     this.setData({ list })
   },
-  setCategory(e) {
-    this.setData({ categoryFilter: e.currentTarget.dataset.category }, () => {
+  onSearchInput(e) {
+    this.setData({ searchText: e.detail.value }, () => {
+      this.refreshRecipeList()
+    })
+  },
+  clearSearch() {
+    this.setData({ searchText: '' }, () => {
       this.refreshRecipeList()
     })
   },

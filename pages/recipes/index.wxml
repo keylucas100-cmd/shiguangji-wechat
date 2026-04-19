@@ -1,18 +1,16 @@
 <view class="container theme-{{themeKey}}">
   <view class="recipe-toolbar">
-    <scroll-view class="filter-scroll" scroll-x enable-flex>
-      <view class="filter-inner">
-        <block wx:for="{{categoryOptions}}" wx:key="key">
-          <view
-            class="filter-chip {{categoryFilter===item.key ? 'active' : ''}}"
-            bindtap="setCategory"
-            data-category="{{item.key}}"
-          >
-            {{item.text}} {{item.count}}
-          </view>
-        </block>
-      </view>
-    </scroll-view>
+    <view class="recipe-search">
+      <text class="search-icon">⌕</text>
+      <input
+        class="search-input"
+        value="{{searchText}}"
+        placeholder="搜索食材或菜名"
+        placeholder-class="search-placeholder"
+        bindinput="onSearchInput"
+      />
+      <text wx:if="{{searchText}}" class="search-clear" bindtap="clearSearch">×</text>
+    </view>
     <view class="sort-chip" bindtap="showSortSheet">
       <text class="sort-text">{{sortText}}</text>
       <text class="sort-arrow">⌄</text>
@@ -35,7 +33,6 @@
         <view class="recipe-main">
           <view class="recipe-title-row">
             <view class="recipe-title">{{item.name}}</view>
-            <view class="recipe-meta">{{item.category}}</view>
           </view>
           <view class="recipe-info">
             <view class="recipe-line">已匹配：{{item.matchedText}}</view>

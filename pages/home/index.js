@@ -1,5 +1,7 @@
 const store = require('../../utils/store')
+const speaker = require('../../utils/speaker')
 const theme = require('../../utils/theme')
+const { getInventoryImage } = require('../../utils/inventoryImage')
 const dismissedPurchaseKey = 'sgj_purchase_dismissed'
 
 function inferCategoryByName(name) {
@@ -11,20 +13,6 @@ function inferCategoryByName(name) {
   if (/(米|饭|面|馒头|包子|饺子|馄饨|粉|燕麦|红薯|紫薯)/.test(text)) return '主食'
   if (/(盐|糖|酱|醋|料酒|蚝油|胡椒|孜然|辣椒粉|葱|姜|蒜|香菜)/.test(text)) return '调料'
   return '其他'
-}
-
-function getSuggestionImage(category) {
-  const map = {
-    '蔬菜': '/assets/inventory/vegetables.jpg',
-    '肉类': '/assets/inventory/meat.jpg',
-    '海鲜': '/assets/inventory/seafood.jpg',
-    '蛋奶': '/assets/inventory/egg-milk.jpg',
-    '水果': '/assets/inventory/fruit.jpg',
-    '主食': '/assets/inventory/rice.jpg',
-    '调料': '/assets/inventory/flavour.jpg',
-    '其他': '/assets/inventory/other.jpg'
-  }
-  return map[category] || map['其他']
 }
 
 function getHomeSuggestionReason(item) {
@@ -46,7 +34,7 @@ function decoratePurchaseSuggestion(item) {
   return {
     ...item,
     category,
-    image: getSuggestionImage(category),
+    image: getInventoryImage(item.name, category),
     itemClass: item.urgency === 'urgent' ? 'purchase-urgent' : 'purchase-low',
     priorityText: item.urgency === 'urgent' ? '高优先' : '',
     homeReason: getHomeSuggestionReason(item)
@@ -96,6 +84,28 @@ function getDaysToExpire(expireDate) {
   return Number.isFinite(diff) ? diff : Number.MAX_SAFE_INTEGER
 }
 
+function buildHomeVoiceMessages(reminders, purchaseData) {
+  const messages = []
+
+  if (reminders.expiring.length) {
+    messages.push({
+      text: `你有${reminders.expiring.length}样食品临期了，请赶快处理~`,
+      key: `home-expiring-${reminders.expiring.length}`,
+      minInterval: 30000
+    })
+  }
+
+  if (purchaseData.purchaseCount) {
+    messages.push({
+      text: `你有${purchaseData.purchaseCount}样食材快没了，建议及时采购`,
+      key: `home-purchase-${purchaseData.purchaseCount}`,
+      minInterval: 30000
+    })
+  }
+
+  return messages
+}
+
 Page({
   data: {
     themeKey: 'green',
@@ -143,6 +153,8 @@ Page({
           itemClass
         }
       })
+        }, () => {
+          speaker.speakBatch(buildHomeVoiceMessages(reminders, purchaseData)).catch(() => false)
         })
       })
   },

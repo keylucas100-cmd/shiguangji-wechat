@@ -174,8 +174,17 @@
 
   <view wx:if="{{voicePanelVisible}}" class="voice-mask">
     <view class="voice-panel">
-      <view class="voice-title">语音识别测试</view>
-      <view class="voice-desc">先输入一段模拟识别文本，确认解析和填表效果。</view>
+      <view class="voice-close" bindtap="cancelVoiceInput">×</view>
+      <view class="voice-header">
+        <view class="voice-title">语音录入</view>
+        <view class="voice-desc">{{voiceStatusText}}</view>
+      </view>
+      <view class="voice-status-row">
+        <view class="voice-badge voice-badge-{{voiceStatus}}">
+          <view class="voice-badge-dot"></view>
+          <text class="voice-badge-text">{{voiceStatus === 'idle' ? '未录音' : voiceStatus === 'listening' ? '录音中' : voiceStatus === 'preparing' ? '准备中' : voiceStatus === 'stopping' ? '结束中' : voiceStatus === 'recognizing' ? '识别中' : voiceStatus === 'error' ? '异常' : '待解析'}}</text>
+        </view>
+      </view>
       <textarea
         class="voice-textarea"
         placeholder="例如：牛肉 2斤 今天购买 昨天出厂 保质期7天"
@@ -185,8 +194,10 @@
       />
       <view class="voice-example">也可以试试：鸡肉 500克 今天买 今天生产 保质期3天</view>
       <view class="voice-actions">
-        <view class="voice-action secondary" bindtap="cancelVoiceInput">取消</view>
-        <view class="voice-action primary" bindtap="confirmVoiceInput">填入表单</view>
+        <view class="voice-action secondary" bindtap="toggleVoiceInput">
+          {{voiceStatus === 'preparing' || voiceStatus === 'listening' || voiceStatus === 'stopping' ? '结束录音' : voiceStatus === 'recognizing' ? '识别中' : voiceText ? '重新录音' : '开始录音'}}
+        </view>
+        <view class="voice-action primary {{voiceCanParse ? '' : 'disabled'}}" bindtap="confirmVoiceInput">解析填入</view>
       </view>
     </view>
   </view>

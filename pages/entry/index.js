@@ -1,5 +1,71 @@
 const store = require("../../utils/store");
+const speaker = require("../../utils/speaker");
 const theme = require("../../utils/theme");
+
+const VOICE_STATUS_TEXT = {
+  idle: "点击开始录音后再说话，录完会自动识别成文字。",
+  preparing: "正在打开麦克风，请稍等一下。",
+  listening: "正在录音，讲完后点击结束录音。",
+  stopping: "正在结束录音。",
+  recognizing: "正在识别语音，请稍等一下。",
+  stopped: "识别完成，可以检查后解析填入。",
+  error: "录音暂时不可用，可以重新试一次。",
+};
+
+const VOICE_BUSY_STATUSES = ["preparing", "listening", "stopping", "recognizing"];
+
+const RECORDER_OPTIONS = {
+  duration: 60000,
+  sampleRate: 16000,
+  numberOfChannels: 1,
+  encodeBitRate: 96000,
+  format: "mp3",
+};
+
+let recorderManager = null;
+let voiceEventBound = false;
+let activeVoicePage = null;
+
+function isVoiceBusy(status) {
+  return VOICE_BUSY_STATUSES.includes(status);
+}
+
+function getRecorderManager() {
+  if (recorderManager) return recorderManager;
+  if (typeof wx.getRecorderManager !== "function") {
+    throw new Error("当前环境不支持录音");
+  }
+
+  recorderManager = wx.getRecorderManager();
+  return recorderManager;
+}
+
+function getVoiceErrorMessage(error) {
+  const message = String(
+    (error && (error.errMsg || error.msg || error.message)) || "",
+  );
+
+  if (/auth deny|auth denied|scope.record|authorize/i.test(message)) {
+    return "请先开启麦克风权限";
+  }
+  if (/network/i.test(message)) {
+    return "当前网络状态不稳定，请重新试一次";
+  }
+  if (/system permission denied/i.test(message)) {
+    return "系统麦克风权限未开启";
+  }
+  if (/audio data empty|empty audio|no speech|silent|silence/i.test(message)) {
+    return "没有录到清晰声音，请重新录一次。";
+  }
+  if (/FUNCTIONS[_\s-]*EXECUTE[_\s-]*FAIL|Client\.parseResponse|tencentcloud|SentenceRecognition|ASR/i.test(message)) {
+    return "语音识别失败，请重新录一次。";
+  }
+  if (/录音|recorder/i.test(message)) {
+    return "录音没有成功，请重新试一次";
+  }
+
+  return "语音识别暂时不可用，请重新试一次。";
+}
 
 function formatToday() {
   return formatDate(new Date());
@@ -10,6 +76,23 @@ function formatDate(date) {
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
+}
+
+function describeDate(dateText) {
+  if (!dateText) return "";
+
+  const target = new Date(`${dateText}T00:00:00`);
+  if (Number.isNaN(target.getTime())) return dateText;
+
+  const today = new Date();
+  const current = new Date(formatDate(today) + "T00:00:00");
+  const diff = Math.round((target - current) / (1000 * 60 * 60 * 24));
+
+  if (diff === 0) return "今天";
+  if (diff === 1) return "明天";
+  if (diff === 2) return "后天";
+  if (diff === -1) return "昨天";
+  return dateText;
 }
 
 function calculateExpireDate(productionDate, shelfLifeDays) {
@@ -394,10 +477,12 @@ function dateOffset(days) {
 function parseRelativeDate(text, keywords) {
   const cleanText = text.replace(/\s/g, "");
   const dayOptions = [
+    { text: "前天", value: dateOffset(-2) },
     { text: "今天", value: dateOffset(0) },
     { text: "昨日", value: dateOffset(-1) },
     { text: "昨天", value: dateOffset(-1) },
     { text: "明天", value: dateOffset(1) },
+    { text: "后天", value: dateOffset(2) },
   ];
 
   for (const day of dayOptions) {
@@ -414,6 +499,10 @@ function parseRelativeDate(text, keywords) {
   return "";
 }
 
+function parseExpireDateInfo(text) {
+  return parseRelativeDate(text, ["到期", "过期"]);
+}
+
 function parseVoiceText(text) {
   const foodInfo = parseFoodInfo(text);
   const quantityInfo = parseQuantityInfo(text);
@@ -424,6 +513,7 @@ function parseVoiceText(text) {
     shelfLifeDays: parseShelfLifeDays(text),
     purchaseDate: parseRelativeDate(text, ["买", "购买", "采购"]),
     productionDate: parseRelativeDate(text, ["生产", "出厂"]),
+    expireDate: parseExpireDateInfo(text),
   };
 }
 
@@ -437,6 +527,9 @@ Page({
     themeKey: "green",
     themeColor: "#2fb66d",
     voicePanelVisible: false,
+    voiceStatus: "idle",
+    voiceStatusText: VOICE_STATUS_TEXT.idle,
+    voiceCanParse: false,
     warningRuleModalVisible: false,
     warningRuleDraft: createWarningRuleDraft(),
     clearToastVisible: false,
@@ -476,10 +569,233 @@ Page({
     });
   },
 
+  updateVoicePanel(updates = {}) {
+    const nextStatus =
+      updates.voiceStatus !== undefined
+        ? updates.voiceStatus
+        : this.data.voiceStatus;
+    const nextText =
+      updates.voiceText !== undefined ? updates.voiceText : this.data.voiceText;
+
+    this.setData({
+      ...updates,
+      voiceCanParse: !isVoiceBusy(nextStatus) && !!String(nextText || "").trim(),
+    });
+  },
+
+  requestVoicePermission() {
+    return new Promise((resolve, reject) => {
+      wx.authorize({
+        scope: "scope.record",
+        success: resolve,
+        fail: () => {
+          wx.showModal({
+            title: "需要麦克风权限",
+            content: "开启后才能使用语音录入。",
+            confirmText: "去设置",
+            success: (res) => {
+              if (!res.confirm) {
+                reject(new Error("未开启麦克风权限"));
+                return;
+              }
+
+              wx.openSetting({
+                success: (settingRes) => {
+                  if (settingRes.authSetting["scope.record"]) {
+                    resolve();
+                    return;
+                  }
+                  reject(new Error("未开启麦克风权限"));
+                },
+                fail: () => reject(new Error("未开启麦克风权限")),
+              });
+            },
+            fail: () => reject(new Error("未开启麦克风权限")),
+          });
+        },
+      });
+    });
+  },
+
+  ensureRecorderManager() {
+    const manager = getRecorderManager();
+    activeVoicePage = this;
+    if (voiceEventBound) return manager;
+
+    manager.onStart(() => {
+      if (!activeVoicePage || !activeVoicePage.data.voicePanelVisible) return;
+      activeVoicePage.updateVoicePanel({
+        voiceStatus: "listening",
+        voiceStatusText: VOICE_STATUS_TEXT.listening,
+      });
+    });
+
+    manager.onStop((res) => {
+      if (!activeVoicePage || !activeVoicePage.data.voicePanelVisible) return;
+      const filePath = res && res.tempFilePath;
+      const duration = Number((res && res.duration) || 0);
+      if (!filePath) {
+        activeVoicePage.updateVoicePanel({
+          voiceStatus: "error",
+          voiceStatusText: "录音文件没有生成成功，请重试。",
+        });
+        return;
+      }
+      if (duration > 0 && duration < 600) {
+        activeVoicePage.updateVoicePanel({
+          voiceStatus: "error",
+          voiceStatusText: "录音时间太短，请重新录一次。",
+        });
+        return;
+      }
+
+      activeVoicePage.recognizeVoiceFile(filePath);
+    });
+
+    manager.onError((res) => {
+      if (!activeVoicePage || !activeVoicePage.data.voicePanelVisible) return;
+      activeVoicePage.updateVoicePanel({
+        voiceStatus: "error",
+        voiceStatusText: getVoiceErrorMessage(res),
+      });
+    });
+
+    manager.onInterruptionBegin(() => {
+      if (!activeVoicePage || !activeVoicePage.data.voicePanelVisible) return;
+      activeVoicePage.updateVoicePanel({
+        voiceStatus: "error",
+        voiceStatusText: "录音被打断了，请重新录一次。",
+      });
+    });
+
+    voiceEventBound = true;
+    return manager;
+  },
+
+  beginVoiceRecognition(resetText = true) {
+    this.updateVoicePanel({
+      voiceStatus: "preparing",
+      voiceStatusText: VOICE_STATUS_TEXT.preparing,
+      voiceText: resetText ? "" : this.data.voiceText,
+    });
+
+    this.requestVoicePermission()
+      .then(() => {
+        try {
+          const manager = this.ensureRecorderManager();
+          manager.start(RECORDER_OPTIONS);
+        } catch (error) {
+          this.updateVoicePanel({
+            voiceStatus: "error",
+            voiceStatusText: getVoiceErrorMessage(error),
+          });
+        }
+      })
+      .catch((error) => {
+        this.updateVoicePanel({
+          voiceStatus: "error",
+          voiceStatusText: getVoiceErrorMessage(error),
+        });
+      });
+  },
+
+  stopVoiceRecognition() {
+    try {
+      const manager = this.ensureRecorderManager();
+      this.updateVoicePanel({
+        voiceStatus: "stopping",
+        voiceStatusText: VOICE_STATUS_TEXT.stopping,
+      });
+      manager.stop();
+    } catch (error) {
+      this.updateVoicePanel({
+        voiceStatus: "error",
+        voiceStatusText: getVoiceErrorMessage(error),
+      });
+    }
+  },
+
+  recognizeVoiceFile(filePath) {
+    if (!wx.cloud || !wx.cloud.uploadFile || !wx.cloud.callFunction) {
+      this.updateVoicePanel({
+        voiceStatus: "error",
+        voiceStatusText: "云开发未初始化，暂时不能识别语音。",
+      });
+      return;
+    }
+
+    const cloudPath = `asr/recordings/${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2)}.mp3`;
+    let uploadedFileID = "";
+
+    this.updateVoicePanel({
+      voiceStatus: "recognizing",
+      voiceStatusText: VOICE_STATUS_TEXT.recognizing,
+    });
+
+    wx.cloud
+      .uploadFile({
+        cloudPath,
+        filePath,
+      })
+      .then((uploadRes) => {
+        uploadedFileID = uploadRes.fileID || "";
+        if (!uploadedFileID) throw new Error("录音上传失败");
+        return wx.cloud.callFunction({
+          name: "asr",
+          data: {
+            fileID: uploadedFileID,
+            format: RECORDER_OPTIONS.format,
+          },
+        });
+      })
+      .then((res) => {
+        if (!this.data.voicePanelVisible) return;
+        const result = res.result || {};
+        const text = String(result.text || result.result || "").trim();
+        if (!text) throw new Error("没有识别到内容，请重新录一次");
+        this.updateVoicePanel({
+          voiceStatus: "stopped",
+          voiceStatusText: VOICE_STATUS_TEXT.stopped,
+          voiceText: text,
+        });
+      })
+      .catch((error) => {
+        if (!this.data.voicePanelVisible) return;
+        console.warn("Voice recognition failed:", error);
+        this.updateVoicePanel({
+          voiceStatus: "error",
+          voiceStatusText: getVoiceErrorMessage(error),
+        });
+      })
+      .finally(() => {
+        if (uploadedFileID && wx.cloud && wx.cloud.deleteFile) {
+          wx.cloud.deleteFile({ fileList: [uploadedFileID] }).catch(() => {});
+        }
+      });
+  },
+
+  resetVoicePanel() {
+    this.updateVoicePanel({
+      voicePanelVisible: false,
+      voiceStatus: "idle",
+      voiceStatusText: VOICE_STATUS_TEXT.idle,
+      voiceText: "",
+    });
+  },
+
   onUnload() {
     if (this.clearToastTimer) {
       clearTimeout(this.clearToastTimer);
       this.clearToastTimer = null;
+    }
+    if (activeVoicePage === this) activeVoicePage = null;
+    if (this.data.voicePanelVisible) {
+      try {
+        const manager = getRecorderManager();
+        manager.stop();
+      } catch (e) {}
     }
   },
 
@@ -655,32 +971,55 @@ Page({
   },
 
   startVoiceInput() {
-    this.setData({
+    this.updateVoicePanel({
       voicePanelVisible: true,
+      voiceStatus: "idle",
+      voiceStatusText: VOICE_STATUS_TEXT.idle,
       voiceText: "",
     });
   },
 
   onVoiceTextInput(e) {
-    this.setData({ voiceText: e.detail.value });
+    this.updateVoicePanel({ voiceText: e.detail.value });
   },
 
   cancelVoiceInput() {
-    this.setData({
-      voicePanelVisible: false,
-      voiceText: "",
-    });
+    if (isVoiceBusy(this.data.voiceStatus)) {
+      try {
+        const manager = this.ensureRecorderManager();
+        manager.stop();
+      } catch (e) {}
+    }
+    if (activeVoicePage === this) activeVoicePage = null;
+    this.resetVoicePanel();
+  },
+
+  toggleVoiceInput() {
+    if (this.data.voiceStatus === "recognizing") {
+      wx.showToast({ title: "正在识别语音", icon: "none" });
+      return;
+    }
+    if (isVoiceBusy(this.data.voiceStatus)) {
+      this.stopVoiceRecognition();
+      return;
+    }
+    this.beginVoiceRecognition();
   },
 
   confirmVoiceInput() {
+    if (isVoiceBusy(this.data.voiceStatus)) {
+      wx.showToast({ title: "先结束录音，再解析内容", icon: "none" });
+      return;
+    }
+
     const text = this.data.voiceText.trim();
     if (!text) {
-      wx.showToast({ title: "请输入识别文本", icon: "none" });
+      wx.showToast({ title: "还没有识别到内容", icon: "none" });
       return;
     }
 
     this.applyVoiceText(text);
-    this.cancelVoiceInput();
+    this.resetVoicePanel();
   },
 
   applyVoiceText(text) {
@@ -709,6 +1048,7 @@ Page({
     fillIfEmpty("purchaseDate", parsed.purchaseDate);
     fillIfEmpty("productionDate", parsed.productionDate);
     fillIfEmpty("shelfLifeDays", parsed.shelfLifeDays);
+    fillIfEmpty("expireDate", parsed.expireDate);
 
     if (updates["form.category"]) {
       const categoryIndex = this.data.categories.findIndex(
@@ -738,7 +1078,7 @@ Page({
       wx.showToast({ title: "出厂日期不能晚于购买日期", icon: "none" });
     }
 
-    if (nextForm.productionDate && nextForm.shelfLifeDays) {
+    if (nextForm.productionDate && nextForm.shelfLifeDays && !nextForm.expireDate) {
       const expireDate = calculateExpireDate(
         nextForm.productionDate,
         nextForm.shelfLifeDays,
@@ -753,6 +1093,11 @@ Page({
       wx.showToast({ title: "没有识别到可填字段", icon: "none" });
       return;
     }
+
+    speaker.speak("已识别并填入表单", {
+      key: "entry-parse-success",
+      minInterval: 5000,
+    }).catch(() => false);
 
     wx.showToast({ title: "已填入识别内容", icon: "success" });
   },
@@ -865,7 +1210,14 @@ Page({
         remainingQuantity: Number(form.quantity),
       })
       .then(() => {
+        const expireSpeakText = describeDate(expireDate);
         this.resetForm();
+        speaker
+          .speak(`已保存${form.name}，预计${expireSpeakText}到期`, {
+            key: `entry-save-${form.name}-${expireDate}`,
+            minInterval: 5000,
+          })
+          .catch(() => false);
         wx.showToast({ title: "保存成功", icon: "success" });
         setTimeout(() => wx.navigateBack({ delta: 1 }), 500);
       })

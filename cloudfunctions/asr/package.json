@@ -1,0 +1,10 @@
+{
+  "name": "asr-cloudfunction",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "dependencies": {
+    "tencentcloud-sdk-nodejs-asr": "^4.1.112",
+    "wx-server-sdk": "latest"
+  }
+}

@@ -1,6 +1,7 @@
 {
   "appid": "wx8632d9e5025e8df9",
   "projectname": "shiguangji-miniprogram-localstyles",
+  "cloudfunctionRoot": "cloudfunctions/",
   "setting": {
     "es6": true,
     "minified": true,
@@ -38,5 +39,6 @@
     "tabIndent": "insertSpaces",
     "tabSize": 2
   },
-  "simulatorPluginLibVersion": {}
+  "simulatorPluginLibVersion": {},
+  "cloudfunctionTemplateRoot": "cloudfunctionTemplate/"
 }

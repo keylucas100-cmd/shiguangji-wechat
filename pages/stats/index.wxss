@@ -1,8 +1,43 @@
 .container {
+  position: relative;
+  min-height: 100vh;
   padding: 28rpx;
+  box-sizing: border-box;
+  background: linear-gradient(160deg, var(--theme-field, #f5fbf4) 0%, #f8fbf8 44%, var(--theme-soft, #e7f8e9) 100%);
+  overflow: hidden;
+}
+
+.container::before,
+.container::after {
+  content: '';
+  position: fixed;
+  z-index: 0;
+  pointer-events: none;
+  filter: blur(36rpx);
+  -webkit-filter: blur(36rpx);
+}
+
+.container::before {
+  left: -120rpx;
+  right: -120rpx;
+  top: -80rpx;
+  height: 420rpx;
+  background: linear-gradient(135deg, var(--theme-soft, #e7f8e9) 0%, rgba(255, 255, 255, 0) 72%);
+  opacity: 0.82;
+}
+
+.container::after {
+  left: -120rpx;
+  right: -120rpx;
+  bottom: -110rpx;
+  height: 520rpx;
+  background: linear-gradient(25deg, var(--theme-secondary, #8acb45) 0%, rgba(255, 255, 255, 0) 66%);
+  opacity: 0.16;
 }
 
 .card {
+  position: relative;
+  z-index: 1;
   background: var(--theme-surface, #ffffff);
   border-radius: 28rpx;
   padding: 28rpx;

@@ -1,5 +1,6 @@
 const store = require('../../utils/store')
 const theme = require('../../utils/theme')
+const { getInventoryImage } = require('../../utils/inventoryImage')
 const itemActions = ['编辑', '已使用', '已丢弃', '删除']
 const cardPressDuration = 150
 const statusOrder = {
@@ -68,19 +69,6 @@ function isSeafoodName(name) {
 function getDisplayCategory(item) {
   if (item.category === '肉类' && isSeafoodName(item.name)) return '海鲜'
   return item.category
-}
-
-function getCategoryImage(category) {
-  const map = {
-    '蔬菜': '/assets/inventory/vegetables.jpg',
-    '肉类': '/assets/inventory/meat.jpg',
-    '海鲜': '/assets/inventory/seafood.jpg',
-    '蛋奶': '/assets/inventory/egg-milk.jpg',
-    '水果': '/assets/inventory/fruit.jpg',
-    '主食': '/assets/inventory/rice.jpg',
-    '调料': '/assets/inventory/flavour.jpg'
-  }
-  return map[category] || '/assets/inventory/other.jpg'
 }
 
 function sortInventoryItems(a, b) {
@@ -199,7 +187,7 @@ Page({
       displayStatus: isExpiringStatus(item.status) ? 'expiring' : item.status,
       category: getDisplayCategory(item),
       categoryTheme: getCategoryTheme(getDisplayCategory(item)),
-      categoryImage: getCategoryImage(getDisplayCategory(item)),
+      categoryImage: getInventoryImage(item.name, getDisplayCategory(item)),
       statusText: isExpiringStatus(item.status) ? '临期' : store.getStatusText(item.status),
       shelfLifeText: item.shelfLifeDays ? `${item.shelfLifeDays}天` : '未填写'
     }))

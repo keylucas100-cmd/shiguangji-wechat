@@ -592,6 +592,397 @@ const builtinRecipes = [
     ],
     tags: ["主食", "暖胃", "家常"],
   },
+  {
+    id: "r25",
+    name: "酱香鸡翅",
+    cover: "/assets/recipes/Soy Sauce Chicken Wings.jpg",
+    category: "家常菜",
+    difficulty: "简单",
+    cookTime: 25,
+    ingredients: [
+      { name: "鸡翅", amount: "300克", required: true, matchNames: ["鸡翅", "鸡翅中", "鸡翅根"] },
+      { name: "姜", amount: "2片", required: false },
+      { name: "葱", amount: "少许", required: false },
+    ],
+    seasonings: [
+      { name: "生抽", amount: "2勺" },
+      { name: "老抽", amount: "半勺" },
+      { name: "糖", amount: "少许" },
+    ],
+    steps: [
+      "鸡翅划两刀，姜葱备好。",
+      "锅中少油煎至两面微黄。",
+      "加入调料和少量水焖煮。",
+      "收汁后撒葱出锅。",
+    ],
+    tags: ["下饭", "家常", "鸡肉"],
+  },
+  {
+    id: "r26",
+    name: "土豆焖鸡",
+    cover: "/assets/recipes/Potato Chicken Stew.jpg",
+    category: "家常菜",
+    difficulty: "中等",
+    cookTime: 35,
+    ingredients: [
+      { name: "鸡肉", amount: "300克", required: true },
+      { name: "土豆", amount: "2个", required: true },
+      { name: "胡萝卜", amount: "半根", required: false },
+    ],
+    seasonings: [
+      { name: "生抽", amount: "2勺" },
+      { name: "盐", amount: "少许" },
+      { name: "姜", amount: "2片" },
+    ],
+    steps: [
+      "鸡肉切块，土豆切块。",
+      "鸡肉炒至变色后加调味料。",
+      "加入土豆和清水焖煮。",
+      "土豆软烂后收汁。",
+    ],
+    tags: ["炖菜", "下饭", "家常"],
+  },
+  {
+    id: "r27",
+    name: "黑椒牛柳",
+    cover: "/assets/recipes/Black Pepper Beef.jpg",
+    category: "家常菜",
+    difficulty: "简单",
+    cookTime: 18,
+    ingredients: [
+      { name: "牛肉", amount: "250克", required: true },
+      { name: "洋葱", amount: "半个", required: false },
+      { name: "青椒", amount: "1个", required: false },
+    ],
+    seasonings: [
+      { name: "黑胡椒", amount: "适量" },
+      { name: "生抽", amount: "1勺" },
+      { name: "油", amount: "适量" },
+    ],
+    steps: [
+      "牛肉切条，用生抽和黑胡椒抓匀。",
+      "洋葱和青椒切块。",
+      "热锅快炒牛肉至变色。",
+      "加入配菜翻炒调味。",
+    ],
+    tags: ["高蛋白", "下饭", "省时"],
+  },
+  {
+    id: "r28",
+    name: "番茄肥牛饭",
+    cover: "/assets/recipes/Beef Tomato Rice Bowl.jpg",
+    category: "主食",
+    difficulty: "简单",
+    cookTime: 20,
+    ingredients: [
+      { name: "肥牛", amount: "200克", required: true, matchNames: ["肥牛", "牛肉片", "肥牛卷"] },
+      { name: "番茄", amount: "2个", required: true },
+      { name: "米饭", amount: "1碗", required: true },
+    ],
+    seasonings: [
+      { name: "生抽", amount: "1勺" },
+      { name: "盐", amount: "少许" },
+      { name: "糖", amount: "少许" },
+    ],
+    steps: [
+      "番茄切块炒出汁。",
+      "加入少量水和调味料煮开。",
+      "放入肥牛或牛肉片烫熟。",
+      "浇在米饭上即可。",
+    ],
+    tags: ["盖饭", "省时", "暖胃"],
+  },
+  {
+    id: "r29",
+    name: "孜然羊肉",
+    cover: "/assets/recipes/Cumin Lamb.jpg",
+    category: "家常菜",
+    difficulty: "简单",
+    cookTime: 18,
+    ingredients: [
+      { name: "羊肉", amount: "250克", required: true },
+      { name: "洋葱", amount: "半个", required: false },
+      { name: "香菜", amount: "少许", required: false },
+    ],
+    seasonings: [
+      { name: "孜然", amount: "适量" },
+      { name: "辣椒粉", amount: "少许" },
+      { name: "盐", amount: "少许" },
+    ],
+    steps: [
+      "羊肉切片，洋葱切丝。",
+      "热锅快炒羊肉至变色。",
+      "加入洋葱翻炒。",
+      "撒孜然和盐调味。",
+    ],
+    tags: ["下饭", "香辣", "省时"],
+  },
+  {
+    id: "r30",
+    name: "萝卜羊肉汤",
+    cover: "/assets/recipes/Lamb Radish Soup.jpg",
+    category: "汤类",
+    difficulty: "中等",
+    cookTime: 50,
+    ingredients: [
+      { name: "羊肉", amount: "300克", required: true },
+      { name: "白萝卜", amount: "1根", required: true },
+      { name: "姜", amount: "3片", required: false },
+    ],
+    seasonings: [
+      { name: "盐", amount: "少许" },
+      { name: "料酒", amount: "1勺" },
+    ],
+    steps: [
+      "羊肉切块焯水。",
+      "白萝卜切块。",
+      "羊肉加姜片炖煮40分钟。",
+      "加入萝卜煮软后调味。",
+    ],
+    tags: ["汤", "暖胃", "家常"],
+  },
+  {
+    id: "r31",
+    name: "红烧排骨",
+    cover: "/assets/recipes/Braised Pork Ribs.jpg",
+    category: "家常菜",
+    difficulty: "中等",
+    cookTime: 45,
+    ingredients: [
+      { name: "排骨", amount: "350克", required: true, matchNames: ["排骨", "猪排骨"] },
+      { name: "姜", amount: "2片", required: false },
+      { name: "葱", amount: "少许", required: false },
+    ],
+    seasonings: [
+      { name: "生抽", amount: "2勺" },
+      { name: "老抽", amount: "半勺" },
+      { name: "糖", amount: "少许" },
+    ],
+    steps: [
+      "排骨焯水洗净。",
+      "锅中炒糖色或直接加调料。",
+      "加入排骨和清水焖煮。",
+      "收汁后撒葱。",
+    ],
+    tags: ["下饭", "炖菜", "家常"],
+  },
+  {
+    id: "r32",
+    name: "肉末茄子",
+    cover: "/assets/recipes/Pork Eggplant Stir Fry.jpg",
+    category: "家常菜",
+    difficulty: "简单",
+    cookTime: 20,
+    ingredients: [
+      { name: "猪肉", amount: "150克", required: true },
+      { name: "茄子", amount: "2根", required: true },
+      { name: "蒜", amount: "2瓣", required: false },
+    ],
+    seasonings: [
+      { name: "生抽", amount: "1勺" },
+      { name: "盐", amount: "少许" },
+      { name: "糖", amount: "少许" },
+    ],
+    steps: [
+      "猪肉剁成肉末，茄子切条。",
+      "先炒肉末和蒜末。",
+      "加入茄子翻炒变软。",
+      "调味后收汁。",
+    ],
+    tags: ["下饭", "家常", "肉末"],
+  },
+  {
+    id: "r33",
+    name: "水蒸蛋",
+    cover: "/assets/recipes/Steamed Egg Custard.jpg",
+    category: "简餐",
+    difficulty: "简单",
+    cookTime: 12,
+    ingredients: [
+      { name: "鸡蛋", amount: "2个", required: true },
+      { name: "葱", amount: "少许", required: false },
+    ],
+    seasonings: [
+      { name: "盐", amount: "少许" },
+      { name: "生抽", amount: "少许" },
+      { name: "香油", amount: "几滴" },
+    ],
+    steps: [
+      "鸡蛋打散，加温水和盐搅匀。",
+      "过筛后盖上保鲜膜。",
+      "上锅蒸约10分钟。",
+      "淋生抽和香油，撒葱。",
+    ],
+    tags: ["嫩滑", "清淡", "省时"],
+  },
+  {
+    id: "r34",
+    name: "蛋炒饭",
+    cover: "/assets/recipes/Egg Fried Rice.jpg",
+    category: "主食",
+    difficulty: "简单",
+    cookTime: 12,
+    ingredients: [
+      { name: "米饭", amount: "1碗", required: true },
+      { name: "鸡蛋", amount: "2个", required: true },
+      { name: "葱", amount: "少许", required: false },
+    ],
+    seasonings: [
+      { name: "盐", amount: "少许" },
+      { name: "油", amount: "适量" },
+    ],
+    steps: [
+      "鸡蛋打散，葱切碎。",
+      "先炒鸡蛋成块。",
+      "加入米饭炒散。",
+      "调味后撒葱出锅。",
+    ],
+    tags: ["主食", "省时", "家常"],
+  },
+  {
+    id: "r35",
+    name: "牛奶南瓜汤",
+    cover: "/assets/recipes/Milk Pumpkin Soup.jpg",
+    category: "汤类",
+    difficulty: "简单",
+    cookTime: 20,
+    ingredients: [
+      { name: "牛奶", amount: "200毫升", required: true },
+      { name: "南瓜", amount: "250克", required: true },
+    ],
+    seasonings: [
+      { name: "盐", amount: "少许" },
+      { name: "黑胡椒", amount: "少许" },
+    ],
+    steps: [
+      "南瓜去皮切块蒸熟。",
+      "压成泥后加牛奶煮开。",
+      "搅拌至顺滑。",
+      "按喜好加盐和黑胡椒。",
+    ],
+    tags: ["早餐", "暖胃", "轻食"],
+  },
+  {
+    id: "r36",
+    name: "奶香蘑菇意面",
+    cover: "/assets/recipes/Creamy Mushroom Pasta.jpg",
+    category: "主食",
+    difficulty: "简单",
+    cookTime: 18,
+    ingredients: [
+      { name: "牛奶", amount: "150毫升", required: true },
+      { name: "蘑菇", amount: "150克", required: true },
+      { name: "面条", amount: "1份", required: true },
+    ],
+    seasonings: [
+      { name: "盐", amount: "少许" },
+      { name: "黑胡椒", amount: "少许" },
+    ],
+    steps: [
+      "面条煮熟备用。",
+      "蘑菇切片炒香。",
+      "加入牛奶小火煮浓。",
+      "拌入面条调味。",
+    ],
+    tags: ["主食", "奶香", "省时"],
+  },
+  {
+    id: "r37",
+    name: "蒜蓉虾仁",
+    cover: "/assets/recipes/Garlic Shrimp.jpg",
+    category: "简餐",
+    difficulty: "简单",
+    cookTime: 12,
+    ingredients: [
+      { name: "虾仁", amount: "200克", required: true, matchNames: ["虾仁"] },
+      { name: "蒜", amount: "3瓣", required: false },
+      { name: "葱", amount: "少许", required: false },
+    ],
+    seasonings: [
+      { name: "盐", amount: "少许" },
+      { name: "生抽", amount: "1勺" },
+      { name: "油", amount: "适量" },
+    ],
+    steps: [
+      "虾处理干净，蒜切末。",
+      "热锅爆香蒜末。",
+      "下虾炒至变色。",
+      "调味后撒葱。",
+    ],
+    tags: ["高蛋白", "省时", "海鲜"],
+  },
+  {
+    id: "r38",
+    name: "鱼头豆腐汤",
+    cover: "/assets/recipes/Fish Tofu Soup.jpg",
+    category: "汤类",
+    difficulty: "中等",
+    cookTime: 35,
+    ingredients: [
+      { name: "鱼头", amount: "300克", required: true, matchNames: ["鱼头"] },
+      { name: "豆腐", amount: "1块", required: true },
+      { name: "姜", amount: "2片", required: false },
+    ],
+    seasonings: [
+      { name: "盐", amount: "少许" },
+      { name: "料酒", amount: "1勺" },
+    ],
+    steps: [
+      "鱼处理干净，豆腐切块。",
+      "鱼煎至两面微黄。",
+      "加热水和姜片煮汤。",
+      "加入豆腐煮熟调味。",
+    ],
+    tags: ["汤", "鲜美", "家常"],
+  },
+  {
+    id: "r39",
+    name: "清蒸鱼",
+    cover: "/assets/recipes/Steamed Fish.jpg",
+    category: "家常菜",
+    difficulty: "简单",
+    cookTime: 18,
+    ingredients: [
+      { name: "鱼", amount: "1条", required: true },
+      { name: "葱", amount: "少许", required: false },
+      { name: "姜", amount: "2片", required: false },
+    ],
+    seasonings: [
+      { name: "生抽", amount: "1勺" },
+      { name: "油", amount: "少许" },
+    ],
+    steps: [
+      "鱼处理干净，铺上姜片。",
+      "上锅蒸至熟透。",
+      "倒掉盘中多余汤汁。",
+      "淋生抽和热油，撒葱。",
+    ],
+    tags: ["清淡", "海鲜", "家常"],
+  },
+  {
+    id: "r40",
+    name: "蟹肉蛋花汤",
+    cover: "/assets/recipes/Crab Egg Drop Soup.jpg",
+    category: "汤类",
+    difficulty: "简单",
+    cookTime: 12,
+    ingredients: [
+      { name: "蟹肉", amount: "150克", required: true, matchNames: ["蟹肉", "螃蟹", "蟹"] },
+      { name: "鸡蛋", amount: "1个", required: true },
+      { name: "葱", amount: "少许", required: false },
+    ],
+    seasonings: [
+      { name: "盐", amount: "少许" },
+      { name: "香油", amount: "几滴" },
+    ],
+    steps: [
+      "蟹肉备好，鸡蛋打散。",
+      "水开后加入蟹肉煮出鲜味。",
+      "淋入蛋液成蛋花。",
+      "调味后撒葱。",
+    ],
+    tags: ["汤", "鲜美", "省时"],
+  },
 ];
 
 function nowISO() {
@@ -611,9 +1002,36 @@ function request(options) {
 function getResponseErrorMessage(res) {
   const payload = res && res.data;
   if (payload && typeof payload === "object" && payload.message)
-    return payload.message;
-  if (typeof payload === "string" && payload) return payload;
+    return translateBackendErrorMessage(payload.message);
+  if (typeof payload === "string" && payload)
+    return translateBackendErrorMessage(payload);
   return "";
+}
+
+function translateBackendErrorMessage(message) {
+  const text = String(message || "").trim();
+  if (!text) return "";
+
+  if (/expire[_\s-]*date.*production[_\s-]*date.*shelf/i.test(text)) {
+    return "预计到期日期可以单独填写，请稍后重试。";
+  }
+  if (/purchase[_\s-]*date.*required|production[_\s-]*date.*required|shelf[_\s-]*life.*required|required/i.test(text)) {
+    return "还有必填信息未填写，请检查后再保存。";
+  }
+  if (/ingredient name is required/i.test(text)) {
+    return "食材名称不能为空。";
+  }
+  if (/inventory record not found/i.test(text)) {
+    return "没有找到这条库存记录。";
+  }
+  if (/inventory payload is invalid/i.test(text)) {
+    return "库存数据格式异常，请稍后重试。";
+  }
+  if (/request failed with status/i.test(text)) {
+    return "服务请求失败，请稍后重试。";
+  }
+
+  return /[a-z]/i.test(text) ? "操作失败，请稍后重试。" : text;
 }
 
 function requestJson(options) {
@@ -622,7 +1040,7 @@ function requestJson(options) {
 
     const error = new Error(
       getResponseErrorMessage(res) ||
-        `Request failed with status ${res.statusCode}`,
+        `服务请求失败，请稍后重试。`,
     );
     error.statusCode = res.statusCode;
     throw error;
@@ -661,46 +1079,36 @@ function parseOptionalDate(value) {
 }
 
 function getBackendPurchaseDate(item, existingItem) {
-  // The UI treats purchase date as optional, but the current backend requires it.
   return (
     parseOptionalDate(item.purchaseDate) ||
-    parseOptionalDate(existingItem && existingItem.purchaseDate) ||
-    formatLocalDate(new Date())
+    parseOptionalDate(existingItem && existingItem.purchaseDate)
   );
 }
 
 function getBackendProductionDate(item, existingItem) {
-  // The UI allows using expire date directly, while the current backend still requires production date.
   return (
     parseOptionalDate(item.productionDate) ||
-    parseOptionalDate(existingItem && existingItem.productionDate) ||
-    parseOptionalDate(item.purchaseDate) ||
-    parseOptionalDate(existingItem && existingItem.purchaseDate) ||
-    formatLocalDate(new Date())
+    parseOptionalDate(existingItem && existingItem.productionDate)
   );
 }
 
-function getDateDiffDays(startDate, endDate) {
-  const start = new Date(`${startDate}T00:00:00`);
-  const end = new Date(`${endDate}T00:00:00`);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 1;
-
-  return Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)));
+function getBackendShelfLifeDays(item, existingItem) {
+  return (
+    parsePositiveInteger(item.shelfLifeDays) ||
+    parsePositiveInteger(existingItem && existingItem.shelfLifeDays) ||
+    null
+  );
 }
 
-function getBackendShelfLifeDays(item, existingItem) {
-  // The UI lets users provide expire date directly, but the backend requires shelf life.
-  const explicitDays =
-    parsePositiveInteger(item.shelfLifeDays) ||
-    parsePositiveInteger(existingItem && existingItem.shelfLifeDays);
-  if (explicitDays) return explicitDays;
-
-  const expireDate =
-    parseOptionalDate(item.expireDate) ||
-    parseOptionalDate(existingItem && existingItem.expireDate);
-  if (!expireDate) return 1;
-
-  return getDateDiffDays(getBackendProductionDate(item, existingItem), expireDate);
+function getBackendInventoryDates(item, existingItem) {
+  return {
+    purchaseDate: getBackendPurchaseDate(item, existingItem),
+    productionDate: getBackendProductionDate(item, existingItem),
+    expireDate:
+      parseOptionalDate(item.expireDate) ||
+      parseOptionalDate(existingItem && existingItem.expireDate),
+    shelfLifeDays: getBackendShelfLifeDays(item, existingItem),
+  };
 }
 
 function formatDateTimeForSql(value) {
@@ -1142,7 +1550,7 @@ async function ensureCurrentUser() {
 
 async function ensureIngredient(item, userId) {
   const name = String(item.name || "").trim();
-  if (!name) throw new Error("Ingredient name is required");
+  if (!name) throw new Error("食材名称不能为空。");
   const warningRules = resolveWarningRules(item);
 
   const payload = await requestJson({
@@ -1199,6 +1607,7 @@ async function resolveIngredientId(item, existingItem) {
 
 function buildCreatePayload(item, userId, ingredientId) {
   const warningRules = resolveWarningRules(item);
+  const dates = getBackendInventoryDates(item);
   return {
     user_id: userId,
     ingredient_id: ingredientId,
@@ -1206,10 +1615,10 @@ function buildCreatePayload(item, userId, ingredientId) {
     source_text: item.sourceText || "",
     quantity: parseNumber(item.quantity),
     unit: item.unit,
-    purchase_date: getBackendPurchaseDate(item),
-    production_date: getBackendProductionDate(item),
-    expire_date: parseOptionalDate(item.expireDate),
-    shelf_life_days: getBackendShelfLifeDays(item),
+    purchase_date: dates.purchaseDate,
+    production_date: dates.productionDate,
+    expire_date: dates.expireDate,
+    shelf_life_days: dates.shelfLifeDays,
     low_risk_days: warningRules.lowRiskDays,
     medium_risk_days: warningRules.mediumRiskDays,
     high_risk_days: warningRules.highRiskDays,
@@ -1217,6 +1626,7 @@ function buildCreatePayload(item, userId, ingredientId) {
 }
 
 function buildUpdatePayload(item, existingItem, ingredientId) {
+  const dates = getBackendInventoryDates(item, existingItem);
   const quantity = parseNumber(item.quantity);
   const consumedQuantity = parseNumber(
     item.consumedQuantity !== undefined
@@ -1265,10 +1675,10 @@ function buildUpdatePayload(item, existingItem, ingredientId) {
         : existingItem.sourceText || "",
     quantity,
     unit: item.unit,
-    purchase_date: getBackendPurchaseDate(item, existingItem),
-    production_date: getBackendProductionDate(item, existingItem),
-    expire_date: parseOptionalDate(item.expireDate),
-    shelf_life_days: getBackendShelfLifeDays(item, existingItem),
+    purchase_date: dates.purchaseDate,
+    production_date: dates.productionDate,
+    expire_date: dates.expireDate,
+    shelf_life_days: dates.shelfLifeDays,
     low_risk_days: warningRules.lowRiskDays,
     medium_risk_days: warningRules.mediumRiskDays,
     high_risk_days: warningRules.highRiskDays,
@@ -1312,7 +1722,7 @@ async function updateInventoryRecord(item) {
       String(v.id) === String(item.id) ||
       String(v.remoteId) === String(targetId),
   );
-  if (!existingItem) throw new Error("Inventory record not found");
+  if (!existingItem) throw new Error("没有找到这条库存记录。");
 
   try {
     const ingredientId = await resolveIngredientId(item, existingItem);
@@ -1370,7 +1780,7 @@ function syncInventoryFromServer() {
 
       const payload = res.data || {};
       if (!Array.isArray(payload.data)) {
-        throw new Error("Inventory payload is invalid");
+        throw new Error("库存数据格式异常，请稍后重试。");
       }
 
       saveInventoryList(payload.data.map(mapServerInventoryItem));
@@ -1615,6 +2025,12 @@ function normalizeIngredient(name) {
   return ingredientAliasMap[text] || text;
 }
 
+function normalizeExactIngredient(name) {
+  return String(name || "")
+    .trim()
+    .replace(/\s/g, "");
+}
+
 function getMainIngredients(recipe) {
   return (recipe.ingredients || []).filter((item) => item.required !== false);
 }
@@ -1642,33 +2058,48 @@ function getRecipeRecommendations() {
   const inventoryNames = new Set(
     inventory.map((item) => normalizeIngredient(item.name)),
   );
+  const inventoryExactNames = new Set(
+    inventory.map((item) => normalizeExactIngredient(item.name)),
+  );
   const expiringNames = new Set(
     inventory
       .filter((item) => EXPIRING_STATUSES.includes(item.status))
       .map((item) => normalizeIngredient(item.name)),
   );
+  const expiringExactNames = new Set(
+    inventory
+      .filter((item) => EXPIRING_STATUSES.includes(item.status))
+      .map((item) => normalizeExactIngredient(item.name)),
+  );
+
+  const matchesIngredient = (item, exactNames = inventoryExactNames, names = inventoryNames) => {
+    if (Array.isArray(item.matchNames) && item.matchNames.length) {
+      return item.matchNames.some((name) => exactNames.has(normalizeExactIngredient(name)));
+    }
+    return names.has(normalizeIngredient(item.name));
+  };
 
   return builtinRecipes
     .map((recipe) => {
       const mainIngredients = getMainIngredients(recipe);
       const optionalIngredients = getOptionalIngredients(recipe);
       const matched = mainIngredients.filter((item) =>
-        inventoryNames.has(normalizeIngredient(item.name)),
+        matchesIngredient(item),
       );
       const missing = mainIngredients.filter(
-        (item) => !inventoryNames.has(normalizeIngredient(item.name)),
+        (item) => !matchesIngredient(item),
       );
       const matchedOptional = optionalIngredients.filter((item) =>
-        inventoryNames.has(normalizeIngredient(item.name)),
+        matchesIngredient(item),
       );
       const missingOptional = optionalIngredients.filter(
-        (item) => !inventoryNames.has(normalizeIngredient(item.name)),
+        (item) => !matchesIngredient(item),
       );
       const missingSeasonings = (recipe.seasonings || []).filter(
         (item) => !inventoryNames.has(normalizeIngredient(item.name)),
       );
       const expiringMatched = mainIngredients.filter((item) =>
-        expiringNames.has(normalizeIngredient(item.name)),
+        matchesIngredient(item, expiringExactNames, expiringNames),
       );
 
       const totalCount = mainIngredients.length;
@@ -1794,11 +2225,20 @@ function getPurchaseSuggestions() {
     return map;
   }, {});
 
+  const activeStockCountMap = inventory.reduce((map, item) => {
+    const key = normalizeIngredient(item.name);
+    if (!key) return map;
+    if (getAvailableQuantity(item) <= 0) return map;
+    map[key] = (map[key] || 0) + 1;
+    return map;
+  }, {});
+
   return Object.keys(historyMap)
     .map((key) => {
       const historyItem = historyMap[key];
       const stockItem = stockMap[key] || { quantity: 0, units: new Set() };
       const currentQuantity = stockItem.quantity;
+      const currentStockCount = activeStockCountMap[key] || 0;
       const units = Array.from(stockItem.units);
       const quantityText =
         currentQuantity > 0
@@ -1812,6 +2252,7 @@ function getPurchaseSuggestions() {
         name: historyItem.name,
         category: stockItem.category || "",
         historyCount: historyItem.count,
+        currentStockCount,
         currentQuantity,
         quantityText,
         urgency,
@@ -1822,11 +2263,12 @@ function getPurchaseSuggestions() {
             : `历史录入 ${historyItem.count} 次，当前仅剩 ${quantityText}`,
       };
     })
-    .filter((item) => item.historyCount >= 2 && item.currentQuantity <= 1)
+    .filter((item) => item.historyCount >= 2 && item.currentStockCount <= 1)
     .sort((a, b) => {
       if (a.urgency !== b.urgency) return a.urgency === "urgent" ? -1 : 1;
       return (
         b.historyCount - a.historyCount ||
+        a.currentStockCount - b.currentStockCount ||
         a.currentQuantity - b.currentQuantity ||
         a.name.localeCompare(b.name, "zh-Hans-CN")
       );
