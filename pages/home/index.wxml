@@ -83,8 +83,8 @@
       </view>
       <view class="reminder-more" bindtap="goInventory">查看全部 ></view>
     </view>
-    <view class="reminder-subtitle" wx:if="{{summary.expiringCount}}">有 {{summary.expiringCount}} 样食品临期了，请赶快处理~</view>
-    <view class="reminder-subtitle" wx:else>目前没有食品临期，继续保持~</view>
+    <view class="reminder-subtitle" wx:if="{{summary.expiringCount}}">有 {{summary.expiringCount}} 样食品临期了，请赶快处理</view>
+    <view class="reminder-subtitle" wx:else>目前没有食品临期，继续保持</view>
 
     <block wx:if="{{expiringList.length}}">
       <block wx:for="{{expiringList}}" wx:key="id">

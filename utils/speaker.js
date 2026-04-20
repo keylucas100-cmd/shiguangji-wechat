@@ -113,6 +113,7 @@ function normalizeSpeechTask(item, options = {}) {
           text: item.text,
           key: item.key || item.text,
           minInterval: item.minInterval,
+          force: item.force,
         };
   const text = String(rawTask.text || "").trim();
   if (!text) return null;
@@ -120,11 +121,13 @@ function normalizeSpeechTask(item, options = {}) {
     text,
     key: rawTask.key || text,
     minInterval: rawTask.minInterval || options.minInterval,
+    force: rawTask.force === undefined ? !!options.force : !!rawTask.force,
   };
 }
 
 function shouldPlayTask(task) {
   if (!isVoiceBroadcastEnabled()) return false;
+  if (task.force) return true;
   const minInterval = Number(task.minInterval) || DEFAULT_MIN_INTERVAL;
   const now = Date.now();
   if (lastPlayedAt[task.key] && now - lastPlayedAt[task.key] < minInterval) {
@@ -157,6 +160,7 @@ function speak(text, options = {}) {
       text,
       key: options.key || text,
       minInterval: options.minInterval,
+      force: options.force,
     },
     options,
   );

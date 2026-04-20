@@ -1,4 +1,5 @@
 const store = require('../../utils/store')
+const speaker = require('../../utils/speaker')
 const theme = require('../../utils/theme')
 const { getInventoryImage } = require('../../utils/inventoryImage')
 const itemActions = ['编辑', '已使用', '已丢弃', '删除']
@@ -144,6 +145,19 @@ function getWarningRuleValidationMessage(form) {
   return ''
 }
 
+function buildInventoryVoiceTask() {
+  const reminders = store.getReminderSummary()
+  const expiringCount = reminders.expiring.length
+
+  if (!expiringCount) return null
+
+  return {
+    text: `你有${expiringCount}样食材即将到期，请及时处理~`,
+    key: `inventory-expiring-${expiringCount}`,
+    force: true
+  }
+}
+
 Page({
   data: {
     filter: 'all',
@@ -179,7 +193,22 @@ Page({
       elderlyMode: !!settings.elderlyMode,
       today
     })
-    this.loadList()
+    this.refreshInventoryData()
+  },
+  refreshInventoryData() {
+    store.syncInventoryFromServer()
+      .catch(() => null)
+      .finally(() => {
+        this.loadList()
+        this.playInventoryVoice()
+      })
+  },
+  playInventoryVoice() {
+    const task = buildInventoryVoiceTask()
+    if (!task) return
+
+    speaker.stop()
+    speaker.speak(task.text, task).catch(() => false)
   },
   setFilter(e) {
     this.setData({ filter: e.currentTarget.dataset.filter }, () => this.loadList())

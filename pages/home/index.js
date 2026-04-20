@@ -179,13 +179,15 @@ function buildHomeVoiceMessages(reminders, purchaseData) {
     messages.push({
       text: `你有${expiredCount}样食材已过期，${expiringCount}样即将到期，请尽快处理`,
       key: `home-reminder-${expiredCount}-${expiringCount}`,
-      minInterval: 30000
+      minInterval: 30000,
+      force: true
     })
   } else if (expiringCount) {
     messages.push({
       text: `你有${expiringCount}样食品临期了，请赶快处理`,
       key: `home-expiring-${expiringCount}`,
-      minInterval: 30000
+      minInterval: 30000,
+      force: true
     })
   }
 
@@ -193,7 +195,8 @@ function buildHomeVoiceMessages(reminders, purchaseData) {
     messages.push({
       text: `你有${purchaseData.purchaseCount}样食材快没了，建议及时采购`,
       key: `home-purchase-${purchaseData.purchaseCount}`,
-      minInterval: 30000
+      minInterval: 30000,
+      force: true
     })
   }
 
@@ -253,6 +256,7 @@ Page({
           hasMoreExpiringReminders: defaultExpiringList.length > homePreviewCount,
           expiringList: defaultExpiringList.slice(0, homePreviewCount).map(decorateDefaultReminderItem)
         }, () => {
+          speaker.stop()
           speaker.speakBatch(buildHomeVoiceMessages(reminders, purchaseData)).catch(() => false)
         })
       })
